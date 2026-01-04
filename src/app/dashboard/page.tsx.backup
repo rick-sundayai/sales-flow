@@ -1,0 +1,154 @@
+"use client";
+
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MetricCard } from "@/components/crm/MetricCard";
+import { ActivityItem, type Activity } from "@/components/crm/ActivityItem";
+import { UpcomingMeetings, type Meeting } from "@/components/crm/UpcomingMeetings";
+import { QuickActions } from "@/components/crm/QuickActions";
+import { ComposeEmailModal } from "@/components/crm/ComposeEmailModal";
+import { ScheduleMeetingModal } from "@/components/crm/ScheduleMeetingModal";
+import { AddClientModal } from "@/components/crm/AddClientModal";
+import { AddDealModal } from "@/components/crm/AddDealModal";
+import { DollarSign, Users, Target, TrendingUp, Activity as ActivityIcon, LogOut } from "lucide-react";
+import { useDashboardMetrics } from "@/lib/queries/dashboard";
+import { useRecentActivities } from "@/lib/queries/activities";
+import { useUpcomingMeetings } from "@/lib/queries/meetings";
+import { useClients } from "@/lib/queries/clients";
+
+export default function DashboardPage() {
+  const { user, profile, signOut, loading } = useAuth();
+  const { data: metrics, isLoading: metricsLoading } = useDashboardMetrics();
+  const { data: activities = [], isLoading: activitiesLoading } = useRecentActivities();
+  const { data: meetings = [], isLoading: meetingsLoading } = useUpcomingMeetings();
+  const { data: clients = [], isLoading: clientsLoading } = useClients();
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
+  const [showAddDealModal, setShowAddDealModal] = useState(false);
+
+  if (loading || metricsLoading || activitiesLoading || meetingsLoading || clientsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Middleware will redirect
+  }
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = "/";
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1">
+                Welcome back, {profile?.first_name || user.email}. Here&apos;s your sales overview.
+              </p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        {/* Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Total Revenue"
+            value={`$${metrics?.totalRevenue.toLocaleString() || '0'}`}
+            trend={metrics?.revenueChange || 0}
+            trendLabel="vs last month"
+            icon={<DollarSign className="h-6 w-6" />}
+          />
+          <MetricCard
+            title="Active Deals"
+            value={`${metrics?.activeDeals || 0}`}
+            trend={metrics?.dealsChange || 0}
+            trendLabel="vs last month"
+            icon={<Target className="h-6 w-6" />}
+          />
+          <MetricCard
+            title="New Clients"
+            value={`${metrics?.newClients || 0}`}
+            trend={metrics?.clientsChange || 0}
+            trendLabel="vs last month"
+            icon={<Users className="h-6 w-6" />}
+          />
+          <MetricCard
+            title="Win Rate"
+            value={`${metrics?.winRate.toFixed(0) || 0}%`}
+            trend={metrics?.winRateChange || 0}
+            trendLabel="vs last month"
+            icon={<TrendingUp className="h-6 w-6" />}
+          />
+        </div>
+
+        {/* Activity and Meetings */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                <ActivityIcon className="h-5 w-5 text-primary" />
+                Recent Activity
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activities.map((activity, index) => (
+                <ActivityItem
+                  key={activity.id}
+                  activity={activity}
+                  isLast={index === activities.length - 1}
+                />
+              ))}
+            </CardContent>
+          </Card>
+
+          <UpcomingMeetings
+            meetings={meetings}
+            onAddMeeting={() => setShowMeetingModal(true)}
+            onJoinMeeting={(meeting) => console.log("Joining:", meeting.title)}
+          />
+        </div>
+      </main>
+
+      {/* Quick Actions FAB */}
+      <QuickActions
+        onAddClient={() => setShowAddClientModal(true)}
+        onAddDeal={() => setShowAddDealModal(true)}
+        onComposeEmail={() => setShowEmailModal(true)}
+        onScheduleMeeting={() => setShowMeetingModal(true)}
+        onAddNote={() => console.log("Add note")}
+      />
+
+      {/* Modals */}
+      <ComposeEmailModal open={showEmailModal} onOpenChange={setShowEmailModal} />
+      <ScheduleMeetingModal open={showMeetingModal} onOpenChange={setShowMeetingModal} />
+      <AddClientModal open={showAddClientModal} onOpenChange={setShowAddClientModal} />
+      <AddDealModal
+        open={showAddDealModal}
+        onOpenChange={setShowAddDealModal}
+        clients={clients.map(c => ({ id: c.id, name: c.contact_name, company: c.company_name || '' }))}
+      />
+    </div>
+  );
+}
