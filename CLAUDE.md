@@ -25,6 +25,17 @@ npm run start        # Start production Next.js server
 # Code Quality
 npm run lint         # Run ESLint with Next.js rules
 npm run type-check   # TypeScript compilation check (tsc --noEmit)
+
+# Testing
+npm run test         # Run Jest tests
+npm run test:watch   # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+
+# Build Analysis & Database
+npm run build:analyze # Analyze bundle size
+npm run db:generate-types # Generate Supabase TypeScript types
+npm run db:validate  # Validate database schema and connections
+npm run validate-env # Validate environment variables
 ```
 
 ## Project Structure
@@ -39,11 +50,15 @@ SalesFlow/
 │   │   │   ├── automations/   # Automation settings
 │   │   │   ├── calendar/      # Calendar/meetings view
 │   │   │   ├── clients/       # Client management
+│   │   │   ├── companies/     # Company management
 │   │   │   ├── emails/        # Email management
 │   │   │   ├── pipeline/      # Deal pipeline (Kanban view)
 │   │   │   ├── settings/      # User settings
 │   │   │   └── page.tsx       # Dashboard home
 │   │   ├── api/               # API routes
+│   │   │   ├── auth/          # Auth endpoints (2FA, sessions)
+│   │   │   ├── admin/         # Admin endpoints (audit logs)
+│   │   │   └── gdpr/          # GDPR compliance endpoints
 │   │   ├── globals.css        # Global styles with CSS variables
 │   │   ├── layout.tsx         # Root layout with providers
 │   │   └── page.tsx           # Public homepage
@@ -57,7 +72,9 @@ SalesFlow/
 │   ├── lib/
 │   │   ├── auth/              # Authentication service
 │   │   ├── providers/         # React Query provider
-│   │   ├── queries/           # React Query hooks (6 query files)
+│   │   ├── queries/           # React Query hooks (6+ query files)
+│   │   ├── schemas/           # Zod validation schemas
+│   │   ├── security/          # Security utilities (2FA, audit, GDPR, etc.)
 │   │   ├── services/          # Business logic and API calls
 │   │   ├── supabase/          # Supabase client configuration (client, server, middleware)
 │   │   ├── types/             # TypeScript type definitions
@@ -68,7 +85,14 @@ SalesFlow/
 │   ├── setup.sql              # Initial user_profiles setup
 │   ├── crm-schema.sql         # Complete CRM schema (clients, deals, activities, etc.)
 │   ├── companyTable.sql       # Company table setup
+│   ├── audit-logs-schema.sql  # Audit logging system
+│   ├── gdpr-compliance-schema.sql # GDPR compliance tables
+│   ├── add-2fa-fields.sql     # Two-factor authentication setup
 │   └── seed.sql               # Seed data for testing
+├── scripts/                   # Utility scripts
+│   ├── generate-types.js      # Generate Supabase types
+│   ├── validate-database.js   # Database validation
+│   └── validate-env.js        # Environment validation
 └── public/                    # Static assets
 ```
 
@@ -87,23 +111,36 @@ SalesFlow/
 
 The database uses a comprehensive CRM schema with the following core tables:
 
-- **user_profiles** - Extended user data beyond Supabase auth (first_name, last_name, avatar_url)
+**Core CRM Tables**:
+- **user_profiles** - Extended user data beyond Supabase auth (first_name, last_name, avatar_url, role, 2FA settings)
 - **clients** - Customer/prospect information (company_name, contact_name, email, phone, status, industry)
+- **companies** - Separate company entities for better data normalization
 - **deals** - Sales opportunities (title, value, stage, probability, priority, expected_close_date)
 - **activities** - Tracks emails, calls, meetings, tasks, notes (linked to clients/deals)
 - **meetings** - Calendar events with Google Calendar integration
-- **automations** - n8n workflow configurations
 - **emails** - Gmail sync and email management
+- **automations** - n8n workflow configurations
+
+**Security & Compliance Tables**:
+- **audit_logs** - Comprehensive audit trail (actions, outcomes, risk levels, IP tracking)
+- **user_sessions** - Session management and tracking
+- **gdpr_requests** - Data export/deletion requests
+- **two_factor_backup_codes** - 2FA backup codes
 
 **Key Relationships**:
 - `user_profiles` → `clients` → `deals` → `activities`
-- `clients` → `meetings`, `emails`
-- `user_profiles` → `automations`
+- `companies` ↔ `clients` (many-to-many via client company associations)
+- `user_profiles` → `meetings`, `emails`, `automations`
+- `user_profiles` → `audit_logs`, `user_sessions`
 
-**Security**:
-- All tables use Row Level Security (RLS) policies for user data isolation
-- Triggers for auto-timestamps, deal stage tracking, client contact updates
-- Enums for type-safe status values (stages, priorities, activity types)
+**Security Features**:
+- Row Level Security (RLS) policies on all tables for data isolation
+- Comprehensive audit logging for all actions
+- Two-factor authentication support
+- GDPR compliance with data export/deletion capabilities
+- Session management with automatic cleanup
+- Password strength validation and rate limiting
+- CSRF protection on sensitive operations
 
 ### State Management Pattern
 
@@ -122,10 +159,12 @@ const addClient = useAddClient()
 
 Query files are organized by domain:
 - `clients.ts` - Client CRUD operations
+- `companies.ts` - Company management
 - `deals.ts` - Deal/pipeline operations
 - `activities.ts` - Activity tracking
 - `dashboard.ts` - Dashboard metrics
 - `meetings.ts` - Calendar/meeting operations
+- `auth.ts` - Authentication and session management
 
 ### Component Architecture
 
@@ -139,14 +178,23 @@ Query files are organized by domain:
 **CRM Components** (`src/components/crm/`):
 - `MetricCard.tsx` - Dashboard KPI cards
 - `DealCard.tsx`, `PipelineColumn.tsx` - Kanban pipeline components
-- `AddClientModal.tsx`, `AddDealModal.tsx` - Form modals for creating entities
-- `ClientRow.tsx` - Client list item component
-- `ActivityItem.tsx` - Activity timeline component
+- `AddClientModal.tsx`, `AddDealModal.tsx`, `AddCompanyModal.tsx` - Creation modals
+- `EditClientModal.tsx`, `EditDealModal.tsx`, `EditCompanyModal.tsx` - Edit modals
+- `ClientRow.tsx`, `CompanyRow.tsx` - List item components
+- `ActivityItem.tsx`, `AddActivityModal.tsx` - Activity management
 - `ComposeEmailModal.tsx` - Email composition
 - `ScheduleMeetingModal.tsx` - Meeting scheduling
+- `QuickActions.tsx`, `SearchBar.tsx`, `UpcomingMeetings.tsx` - Utility components
 - `ai-email-composer.tsx` - AI-powered email generation (Google Gemini)
 - `deal-drawer.tsx` - Deal detail drawer
 - `deal-risk-analysis.tsx` - AI deal risk assessment
+
+**Security Components** (`src/components/ui/`):
+- `TwoFactorAuth.tsx` - 2FA setup and verification
+- `SessionManager.tsx` - Active session management
+- `AuditLogViewer.tsx` - Audit trail display
+- `PasswordStrengthIndicator.tsx` - Password validation UI
+- `DeleteConfirmDialog.tsx` - Secure deletion confirmations
 
 ### Styling System
 
@@ -182,8 +230,12 @@ Configured in:
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
    ```
 3. Run SQL scripts in Supabase SQL Editor in order:
-   - `database/setup.sql` - User profiles
-   - `database/crm-schema.sql` - Complete CRM schema
+   - `database/setup.sql` - User profiles and base tables
+   - `database/crm-schema.sql` - Core CRM schema (clients, deals, activities, etc.)
+   - `database/companyTable.sql` - Company entities
+   - `database/audit-logs-schema.sql` - Security audit logging
+   - `database/gdpr-compliance-schema.sql` - GDPR compliance tables
+   - `database/add-2fa-fields.sql` - Two-factor authentication
    - `database/seed.sql` - (Optional) Test data
 
 ## AI Features
@@ -201,6 +253,31 @@ The application includes Google Gemini AI integration:
   - Risk factor identification
 
 Requires `NEXT_PUBLIC_GEMINI_API_KEY` environment variable.
+
+## Security Architecture
+
+The application implements enterprise-grade security features:
+
+### Authentication & Authorization
+- **Multi-factor Authentication (2FA)** - TOTP-based with backup codes
+- **Session Management** - Secure session tracking with automatic cleanup
+- **Password Security** - Strength validation, secure hashing, breach detection
+- **Rate Limiting** - Protection against brute force attacks
+
+### Audit & Compliance
+- **Comprehensive Audit Logging** - All user actions tracked with risk assessment
+- **GDPR Compliance** - Data export, deletion, and consent management
+- **Role-based Access Control** - Admin/user roles with appropriate permissions
+- **Data Encryption** - At-rest and in-transit encryption
+
+### Security Services (`src/lib/security/`):
+- `audit-logger.ts` - Centralized audit logging with risk levels
+- `two-factor-auth.ts` - 2FA implementation with backup codes
+- `session-manager.ts` - Secure session handling
+- `password-validation.ts` - Password strength and breach checking
+- `rate-limiter.ts` - Request rate limiting
+- `csrf-protection.ts` - Cross-site request forgery protection
+- `gdpr-compliance.ts` - GDPR data management utilities
 
 ## Key Implementation Patterns
 
@@ -258,4 +335,24 @@ const form = useForm({
 
 ## Migration Context
 
-This project evolved from a simple auth template (`talent-aether-auth-template`) into a full CRM application. The codebase maintains the original authentication foundation while adding comprehensive CRM functionality including client management, deal tracking, and activity monitoring.
+This project evolved from a simple auth template into a full-featured CRM application (SalesFlow). The codebase maintains the original authentication foundation while adding comprehensive CRM functionality including client management, deal tracking, activity monitoring, and enterprise security features. The application is production-ready with GDPR compliance, audit logging, and multi-factor authentication.
+
+## Environment Variables
+
+Required environment variables for development and production:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# AI Features (Optional)
+NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-api-key
+
+# Security (Optional - auto-generated if not provided)
+NEXTAUTH_SECRET=your-nextauth-secret
+CSRF_SECRET=your-csrf-secret
+
+# Production Only
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+```
