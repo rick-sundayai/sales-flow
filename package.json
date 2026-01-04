@@ -13,6 +13,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:ui": "jest --watch --verbose",
+    "test:ci": "jest --ci --coverage --watchAll=false --passWithNoTests",
     "db:generate-types": "node scripts/generate-types.js",
     "db:validate": "node scripts/validate-database.js",
     "validate-env": "node scripts/validate-env.js"
@@ -74,6 +76,10 @@
     "zod": "^4.1.9"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -81,8 +87,12 @@
     "dotenv": "^16.3.1",
     "eslint": "^9",
     "eslint-config-next": "15.5.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "jest-watch-typeahead": "^3.0.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "ts-jest": "^29.4.6",
     "typescript": "^5"
   },
   "keywords": [

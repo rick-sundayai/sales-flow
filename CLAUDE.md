@@ -28,8 +28,10 @@ npm run type-check   # TypeScript compilation check (tsc --noEmit)
 
 # Testing
 npm run test         # Run Jest tests
-npm run test:watch   # Run tests in watch mode
+npm run test:watch   # Run tests in watch mode  
 npm run test:coverage # Run tests with coverage report
+npm run test:ui      # Run tests in watch mode with verbose output
+npm run test:ci      # Run tests in CI mode with coverage
 
 # Build Analysis & Database
 npm run build:analyze # Analyze bundle size
@@ -333,9 +335,77 @@ const form = useForm({
 - **Real-time**: Supabase subscriptions available for live updates
 - **Build**: Next.js production builds are optimized and cached
 
+## Testing Framework
+
+The application uses a comprehensive testing strategy following the testing pyramid:
+
+### Testing Stack
+- **Jest** - Test runner and assertion library
+- **React Testing Library** - Component testing utilities  
+- **@testing-library/user-event** - User interaction simulation
+- **@testing-library/jest-dom** - Custom Jest matchers for DOM testing
+
+### Test Structure
+```
+src/__tests__/
+├── __mocks__/           # Mock implementations
+│   └── supabase.ts      # Supabase client mocks
+├── components/          # Component integration tests
+│   └── crm/            # CRM component tests
+├── hooks/              # Custom hook tests
+├── queries/            # TanStack Query hook tests
+├── schemas/            # Zod validation tests
+├── utils/              # Utility function tests
+└── test-utils.tsx      # Common testing utilities
+```
+
+### Testing Patterns
+
+**Unit Testing (Low-level)**:
+- Utility functions (`src/lib/utils/`)
+- Validation schemas (`src/lib/schemas/`)
+- Security utilities (`src/lib/security/`)
+- Custom hooks (`src/hooks/`)
+
+**Integration Testing (Component-level)**:
+- CRM components with mocked dependencies
+- User interaction flows
+- Form validation and submission
+- Error handling and loading states
+
+**Query Testing**:
+- TanStack Query hooks with mocked Supabase
+- Cache invalidation
+- Optimistic updates
+- Error scenarios
+
+### Mock Strategy
+- **Supabase Client**: Comprehensive mocks for database operations
+- **Authentication**: Mock auth state and user management
+- **External APIs**: Mock Google Gemini AI and other services
+- **Next.js**: Mock router, image, and navigation components
+
+### Test Utilities
+- **Custom render**: Pre-configured with QueryClient and theme providers
+- **Mock data**: Reusable mock objects for users, clients, deals, etc.
+- **Auth helpers**: Functions to set up authenticated/unauthenticated states
+- **Database helpers**: Functions to mock successful/failed database operations
+
+### Coverage Targets
+- Lines: 70%
+- Functions: 70% 
+- Branches: 70%
+- Statements: 70%
+
+### Running Tests
+- `npm run test` - Run all tests once
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:coverage` - Generate coverage report
+- `npm run test:ci` - CI-optimized test run
+
 ## Migration Context
 
-This project evolved from a simple auth template into a full-featured CRM application (SalesFlow). The codebase maintains the original authentication foundation while adding comprehensive CRM functionality including client management, deal tracking, activity monitoring, and enterprise security features. The application is production-ready with GDPR compliance, audit logging, and multi-factor authentication.
+This project evolved from a simple auth template into a full-featured CRM application (SalesFlow). The codebase maintains the original authentication foundation while adding comprehensive CRM functionality including client management, deal tracking, activity monitoring, and enterprise security features. The application is production-ready with GDPR compliance, audit logging, multi-factor authentication, and comprehensive test coverage.
 
 ## Environment Variables
 
