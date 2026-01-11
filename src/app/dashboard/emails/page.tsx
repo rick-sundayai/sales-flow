@@ -26,10 +26,8 @@ import {
   User
 } from "lucide-react";
 import { useClients } from "@/lib/queries/clients";
-import { useDeals } from "@/lib/queries/deals";
 import { logger } from "@/lib/utils/logger";
 
-// Mock email data - would be replaced with actual Gmail integration
 interface EmailMessage {
   id: string;
   from: string;
@@ -45,50 +43,10 @@ interface EmailMessage {
   threadId?: string;
 }
 
-const MOCK_EMAILS: EmailMessage[] = [
-  {
-    id: '1',
-    from: 'john.doe@acmecorp.com',
-    to: ['you@company.com'],
-    subject: 'Re: Software License Proposal',
-    body: 'Hi, thanks for the proposal. We would like to discuss the pricing options for the enterprise package. Could we schedule a call this week?',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    isRead: false,
-    isStarred: true,
-    hasAttachments: false,
-    labels: ['prospect', 'high-priority']
-  },
-  {
-    id: '2',
-    from: 'sarah.wilson@techstart.io',
-    to: ['you@company.com'],
-    subject: 'Follow-up on Demo Meeting',
-    body: 'Thank you for the demo yesterday. Our team was impressed with the features. We have a few questions about the implementation timeline.',
-    timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-    isRead: true,
-    isStarred: false,
-    hasAttachments: true,
-    labels: ['follow-up', 'demo']
-  },
-  {
-    id: '3',
-    from: 'mike.chen@globaltech.com',
-    to: ['you@company.com'],
-    cc: ['team@globaltech.com'],
-    subject: 'Contract Review Complete',
-    body: 'The legal team has completed their review of the contract. We are ready to proceed with the next steps.',
-    timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-    isRead: true,
-    isStarred: false,
-    hasAttachments: true,
-    labels: ['contract', 'ready-to-close']
-  }
-];
-
 export default function EmailsPage() {
   const { user, loading } = useAuth();
   const { data: clients = [] } = useClients();
-  
+
   const [selectedEmail, setSelectedEmail] = useState<EmailMessage | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLabel, setSelectedLabel] = useState("all");
@@ -96,23 +54,26 @@ export default function EmailsPage() {
   const [showComposer, setShowComposer] = useState(false);
   const [showRegularComposer, setShowRegularComposer] = useState(false);
 
+  // TODO: Replace with actual email data from Supabase
+  const emails: EmailMessage[] = useMemo(() => [], []);
+
   const filteredEmails = useMemo(() => {
-    return MOCK_EMAILS.filter(email => {
-      const matchesSearch = 
+    return emails.filter(email => {
+      const matchesSearch =
         email.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
         email.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
         email.body.toLowerCase().includes(searchQuery.toLowerCase());
-      
+
       const matchesLabel = selectedLabel === 'all' || email.labels.includes(selectedLabel);
-      
+
       return matchesSearch && matchesLabel;
     });
-  }, [searchQuery, selectedLabel]);
+  }, [emails, searchQuery, selectedLabel]);
 
-  const unreadCount = MOCK_EMAILS.filter(email => !email.isRead).length;
-  const starredCount = MOCK_EMAILS.filter(email => email.isStarred).length;
+  const unreadCount = emails.filter(email => !email.isRead).length;
+  const starredCount = emails.filter(email => email.isStarred).length;
 
-  const allLabels = [...new Set(MOCK_EMAILS.flatMap(email => email.labels))];
+  const allLabels = [...new Set(emails.flatMap(email => email.labels))];
 
   const handleSendEmail = (email: { to: string; subject: string; body: string }) => {
     logger.userAction('email_compose', user?.id || 'anonymous', {
@@ -236,7 +197,7 @@ export default function EmailsPage() {
               >
                 All emails
               </button>
-              {allLabels.map(label => (
+              {allLabels.map((label: string) => (
                 <button
                   key={label}
                   onClick={() => setSelectedLabel(label)}
@@ -263,53 +224,63 @@ export default function EmailsPage() {
               </h2>
             </div>
             <div className="divide-y divide-border">
-              {filteredEmails.map(email => {
-                const client = findClientByEmail(email.from);
-                return (
-                  <div
-                    key={email.id}
-                    className={`p-4 cursor-pointer hover:bg-accent/50 transition-colors ${
-                      selectedEmail?.id === email.id ? 'bg-accent' : ''
-                    } ${!email.isRead ? 'border-l-2 border-l-blue-500' : ''}`}
-                    onClick={() => setSelectedEmail(email)}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          {client ? (
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-blue-500" />
-                              <span className="font-medium text-sm">{client.contact_name}</span>
-                              <Badge variant="outline" className="text-xs">Client</Badge>
-                            </div>
-                          ) : (
-                            <span className="font-medium text-sm">{email.from}</span>
-                          )}
-                          {email.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
-                          {email.hasAttachments && <Paperclip className="h-4 w-4 text-muted-foreground" />}
-                        </div>
-                        <h3 className={`text-sm truncate ${!email.isRead ? 'font-semibold' : ''}`}>
-                          {email.subject}
-                        </h3>
-                        <p className="text-xs text-muted-foreground truncate mt-1">
-                          {email.body}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Clock className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs text-muted-foreground">
-                            {formatTimestamp(email.timestamp)}
-                          </span>
-                          {email.labels.slice(0, 2).map(label => (
-                            <Badge key={label} variant="secondary" className="text-xs">
-                              {label.replace('-', ' ')}
-                            </Badge>
-                          ))}
+              {filteredEmails.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Mail className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="font-semibold mb-2">No Emails</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Email integration is not yet configured. Connect your email service to view messages here.
+                  </p>
+                </div>
+              ) : (
+                filteredEmails.map((email: EmailMessage) => {
+                  const client = findClientByEmail(email.from);
+                  return (
+                    <div
+                      key={email.id}
+                      className={`p-4 cursor-pointer hover:bg-accent/50 transition-colors ${
+                        selectedEmail?.id === email.id ? 'bg-accent' : ''
+                      } ${!email.isRead ? 'border-l-2 border-l-blue-500' : ''}`}
+                      onClick={() => setSelectedEmail(email)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            {client ? (
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-blue-500" />
+                                <span className="font-medium text-sm">{client.contact_name}</span>
+                                <Badge variant="outline" className="text-xs">Client</Badge>
+                              </div>
+                            ) : (
+                              <span className="font-medium text-sm">{email.from}</span>
+                            )}
+                            {email.isStarred && <Star className="h-4 w-4 text-yellow-500 fill-current" />}
+                            {email.hasAttachments && <Paperclip className="h-4 w-4 text-muted-foreground" />}
+                          </div>
+                          <h3 className={`text-sm truncate ${!email.isRead ? 'font-semibold' : ''}`}>
+                            {email.subject}
+                          </h3>
+                          <p className="text-xs text-muted-foreground truncate mt-1">
+                            {email.body}
+                          </p>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">
+                              {formatTimestamp(email.timestamp)}
+                            </span>
+                            {email.labels.slice(0, 2).map((label: string) => (
+                              <Badge key={label} variant="secondary" className="text-xs">
+                                {label.replace('-', ' ')}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 

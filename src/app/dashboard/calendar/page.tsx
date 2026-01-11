@@ -62,50 +62,7 @@ interface SchedulingSuggestion {
   conflictWarnings?: string[];
 }
 
-const MOCK_MEETINGS: Meeting[] = [
-  {
-    id: '1',
-    title: 'Product Demo - TechStart Solutions',
-    description: 'Present our enterprise package to potential high-value client',
-    startTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2 hours from now
-    endTime: new Date(Date.now() + 3 * 60 * 60 * 1000),
-    type: 'video',
-    attendees: ['sarah.wilson@techstart.io', 'mike.chen@techstart.io'],
-    status: 'scheduled',
-    clientId: 'client-1',
-    dealId: 'deal-1',
-    priority: 'high',
-    tags: ['demo', 'enterprise', 'high-value']
-  },
-  {
-    id: '2',
-    title: 'Contract Negotiation - GlobalTech',
-    description: 'Finalize terms for enterprise license agreement',
-    startTime: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
-    endTime: new Date(Date.now() + 25 * 60 * 60 * 1000),
-    type: 'phone',
-    attendees: ['john.doe@globaltech.com', 'legal@globaltech.com'],
-    status: 'scheduled',
-    clientId: 'client-2',
-    dealId: 'deal-2',
-    priority: 'high',
-    tags: ['negotiation', 'contract', 'closing']
-  },
-  {
-    id: '3',
-    title: 'Quarterly Review - Acme Corp',
-    description: 'Review performance metrics and discuss renewal',
-    startTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000),
-    type: 'in-person',
-    location: 'Acme Corp Headquarters, Suite 1200',
-    attendees: ['jane.smith@acme.com', 'cto@acme.com'],
-    status: 'scheduled',
-    clientId: 'client-3',
-    priority: 'medium',
-    tags: ['review', 'renewal', 'existing-client']
-  }
-];
+// TODO: Replace with actual meeting data from Supabase
 
 export default function CalendarPage() {
   const { user, loading } = useAuth();
@@ -119,27 +76,30 @@ export default function CalendarPage() {
   const [schedulingSuggestion, setSchedulingSuggestion] = useState<SchedulingSuggestion | null>(null);
   const [showNewMeetingModal, setShowNewMeetingModal] = useState(false);
 
+  // TODO: Replace with actual meeting data from Supabase
+  const meetings: Meeting[] = useMemo(() => [], []);
+
   const isToday = (date: Date) => {
     const today = new Date();
     return date.toDateString() === today.toDateString();
   };
 
   const filteredMeetings = useMemo(() => {
-    return MOCK_MEETINGS.filter(meeting => {
-      const matchesSearch = 
+    return meetings.filter(meeting => {
+      const matchesSearch =
         meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         meeting.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         meeting.attendees.some(attendee => attendee.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesFilter = 
+
+      const matchesFilter =
         selectedFilter === 'all' ||
         (selectedFilter === 'upcoming' && meeting.status === 'scheduled' && meeting.startTime > new Date()) ||
         (selectedFilter === 'today' && isToday(meeting.startTime)) ||
         (selectedFilter === 'high-priority' && meeting.priority === 'high');
-      
+
       return matchesSearch && matchesFilter;
     });
-  }, [searchQuery, selectedFilter]);
+  }, [meetings, searchQuery, selectedFilter]);
 
   const generateMeetingPrepMutation = useMutation({
     mutationFn: async (meeting: Meeting) => {
@@ -207,7 +167,7 @@ Duration: ${meetingDetails.duration} minutes
 Attendees: ${meetingDetails.attendees.join(', ')}
 
 Current time: ${new Date().toISOString()}
-Existing meetings: ${JSON.stringify(MOCK_MEETINGS.map(m => ({ title: m.title, start: m.startTime, end: m.endTime })))}
+Existing meetings: ${JSON.stringify(meetings.map(m => ({ title: m.title, start: m.startTime, end: m.endTime })))}
 
 Consider:
 - Optimal meeting times based on productivity patterns
@@ -318,10 +278,10 @@ Please provide scheduling suggestions in JSON format:
             <h3 className="text-sm font-medium text-muted-foreground">Filters</h3>
             <div className="space-y-1">
               {[
-                { key: 'all', label: 'All Meetings', count: MOCK_MEETINGS.length },
-                { key: 'upcoming', label: 'Upcoming', count: MOCK_MEETINGS.filter(m => m.status === 'scheduled' && m.startTime > new Date()).length },
-                { key: 'today', label: 'Today', count: MOCK_MEETINGS.filter(m => isToday(m.startTime)).length },
-                { key: 'high-priority', label: 'High Priority', count: MOCK_MEETINGS.filter(m => m.priority === 'high').length }
+                { key: 'all', label: 'All Meetings', count: meetings.length },
+                { key: 'upcoming', label: 'Upcoming', count: meetings.filter(m => m.status === 'scheduled' && m.startTime > new Date()).length },
+                { key: 'today', label: 'Today', count: meetings.filter(m => isToday(m.startTime)).length },
+                { key: 'high-priority', label: 'High Priority', count: meetings.filter(m => m.priority === 'high').length }
               ].map(filter => (
                 <button
                   key={filter.key}
@@ -370,7 +330,16 @@ Please provide scheduling suggestions in JSON format:
               </h2>
             </div>
             <div className="divide-y divide-border">
-              {filteredMeetings.map(meeting => (
+              {filteredMeetings.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <h3 className="font-semibold mb-2">No Meetings Scheduled</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Schedule your first meeting to get started.
+                  </p>
+                </div>
+              ) : (
+                filteredMeetings.map(meeting => (
                 <div
                   key={meeting.id}
                   className={`p-4 cursor-pointer hover:bg-accent/50 transition-colors border-l-4 ${
@@ -420,7 +389,7 @@ Please provide scheduling suggestions in JSON format:
                     </div>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           </div>
 

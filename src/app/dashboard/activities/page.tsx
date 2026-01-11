@@ -1,54 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Circle, Phone, Mail, Calendar } from "lucide-react";
-
-// Mock data for now - will connect to Supabase later
-const mockActivities = [
-  {
-    id: "1",
-    type: "call",
-    title: "Follow-up call with Sarah",
-    client: "Acme Corporation",
-    date: "2024-12-06",
-    completed: false,
-  },
-  {
-    id: "2",
-    type: "email",
-    title: "Send proposal to Michael",
-    client: "TechStart Inc",
-    date: "2024-12-06",
-    completed: true,
-  },
-  {
-    id: "3",
-    type: "meeting",
-    title: "Product demo with Emily",
-    client: "Growth Labs",
-    date: "2024-12-07",
-    completed: false,
-  },
-  {
-    id: "4",
-    type: "call",
-    title: "Contract negotiation with Robert",
-    client: "DataFlow Systems",
-    date: "2024-12-07",
-    completed: false,
-  },
-  {
-    id: "5",
-    type: "email",
-    title: "Send invoice to Anna",
-    client: "Quantum Solutions",
-    date: "2024-12-05",
-    completed: true,
-  },
-];
+import { useRecentActivities } from "@/lib/queries/activities";
 
 const activityIcons = {
   call: Phone,
@@ -58,9 +15,26 @@ const activityIcons = {
 
 export default function ActivitiesPage() {
   const { user, loading } = useAuth();
-  const [activities, setActivities] = useState(mockActivities);
+  const { data: recentActivities = [], isLoading: activitiesLoading } = useRecentActivities();
 
-  if (loading) {
+  // Map activities to the format expected by this component
+  const activities = recentActivities.map(activity => ({
+    id: activity.id,
+    type: activity.type,
+    title: activity.title,
+    client: activity.client_name || "Unknown",
+    date: new Date(activity.created_at).toISOString().split('T')[0],
+    completed: activity.completed || false,
+  }));
+
+  const [localActivities, setLocalActivities] = useState(activities);
+
+  // Update local activities when data changes
+  useEffect(() => {
+    setLocalActivities(activities);
+  }, [activities]);
+
+  if (loading || activitiesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -73,14 +47,15 @@ export default function ActivitiesPage() {
   }
 
   const toggleComplete = (id: string) => {
-    setActivities((prev) =>
+    setLocalActivities((prev) =>
       prev.map((activity) =>
         activity.id === id ? { ...activity, completed: !activity.completed } : activity
       )
     );
+    // TODO: Update completion status in Supabase
   };
 
-  const completedCount = activities.filter((a) => a.completed).length;
+  const completedCount = localActivities.filter((a) => a.completed).length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,7 +71,7 @@ export default function ActivitiesPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Activities</h1>
               <p className="text-gray-600 dark:text-gray-400">
-                {completedCount} of {activities.length} completed
+                {completedCount} of {localActivities.length} completed
               </p>
             </div>
           </div>
@@ -104,8 +79,17 @@ export default function ActivitiesPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-3">
-          {activities.map((activity) => {
+        {localActivities.length === 0 ? (
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-8 text-center">
+            <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400 dark:text-gray-600" />
+            <h3 className="font-semibold mb-2">No Activities Yet</h3>
+            <p className="text-sm text-muted-foreground">
+              Activities will appear here as you interact with clients and deals.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {localActivities.map((activity) => {
             const Icon = activityIcons[activity.type as keyof typeof activityIcons];
             return (
               <div
@@ -145,13 +129,8 @@ export default function ActivitiesPage() {
               </div>
             );
           })}
-        </div>
-
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <p className="text-sm text-blue-800 dark:text-blue-300">
-            <strong>Note:</strong> This page currently shows mock data. Connect to Supabase to see real activity data.
-          </p>
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -105,15 +105,8 @@ export function BentoGridDashboard({
   const [selectedDeal, setSelectedDeal] = useState<string | null>(null);
   const [isDealDrawerOpen, setIsDealDrawerOpen] = useState(false);
 
-  // Sample data for charts - keeping revenue data as mock for now
-  const revenueData = [
-    { month: 'Jan', revenue: 45000, deals: 12 },
-    { month: 'Feb', revenue: 52000, deals: 15 },
-    { month: 'Mar', revenue: 48000, deals: 13 },
-    { month: 'Apr', revenue: 61000, deals: 18 },
-    { month: 'May', revenue: 55000, deals: 16 },
-    { month: 'Jun', revenue: 67000, deals: 20 }
-  ];
+  // TODO: Replace with actual revenue data from Supabase analytics
+  const revenueData: Array<{ month: string; revenue: number; deals: number }> = [];
 
   // Generate real pipeline data from deals
   const pipelineData = useMemo(() => {
@@ -171,36 +164,9 @@ export function BentoGridDashboard({
     if (!selectedDeal) return undefined;
     const deal = deals.find(d => d.id === selectedDeal);
     if (!deal) return undefined;
-    
-    return {
-      ...deal,
-      activities: [
-        {
-          id: '1',
-          type: 'email',
-          title: 'Sent proposal',
-          description: 'Sent detailed proposal with pricing options',
-          completed: true,
-          created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          type: 'call',
-          title: 'Discovery call',
-          description: 'Initial discovery call to understand requirements',
-          completed: true,
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          type: 'meeting',
-          title: 'Follow-up scheduled',
-          description: 'Scheduled follow-up meeting for next week',
-          completed: false,
-          created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ]
-    };
+
+    // Return deal with its actual activities (if available in the deal object)
+    return deal;
   })();
 
   return (
