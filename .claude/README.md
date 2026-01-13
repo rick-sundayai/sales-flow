@@ -4,7 +4,76 @@ This directory contains custom Skills for Claude Code to help with development o
 
 ## Available Skills
 
-### 1. TypeScript Safety (`typescript-safety`)
+### 1. Brainstorming (`brainstorming`)
+Explores user intent, requirements and design before implementation through collaborative dialogue.
+
+**Triggers when:**
+- Creating new features
+- Building components
+- Adding functionality
+- Modifying behavior
+- Any creative work requiring design decisions
+
+**Key features:**
+- Collaborative exploration through focused questions
+- Multiple approach proposals with trade-offs
+- Incremental design validation (200-300 word sections)
+- YAGNI-focused feature scope management
+- Documentation of validated designs
+
+**Note:** This skill MUST be used before any creative implementation work.
+
+### 2. Writing Plans (`writing-plans`)
+Creates comprehensive, bite-sized implementation plans for multi-step tasks.
+
+**Triggers when:**
+- Have a spec or requirements document
+- Need to break down complex tasks
+- Before starting multi-step implementation
+- Working with junior developers or handoff scenarios
+
+**Key features:**
+- Bite-sized tasks (2-5 minutes each)
+- Complete code examples in plan
+- Exact file paths and commands
+- TDD workflow integration
+- Commit strategy included
+
+### 3. Writing Skills (`writing-skills`)
+Test-driven development approach for creating and editing Claude Code skills.
+
+**Triggers when:**
+- Creating new skills
+- Editing existing skills
+- Verifying skills work before deployment
+- Need to document reusable patterns
+
+**Key features:**
+- RED-GREEN-REFACTOR cycle for documentation
+- Pressure scenario testing with subagents
+- Rationalization-proofing techniques
+- Claude Search Optimization (CSO) guidelines
+- Comprehensive deployment checklist
+
+### 4. Frontend Design (`frontend-design`)
+Creates distinctive, production-grade frontend interfaces with high design quality.
+
+**Triggers when:**
+- Building web components
+- Creating pages or applications
+- Need unique, memorable UI
+- Avoiding generic AI aesthetics
+
+**Key features:**
+- Bold aesthetic direction selection
+- Typography with distinctive font choices
+- Rich animations and micro-interactions
+- Unexpected layouts and spatial composition
+- Production-ready, functional code
+
+**Note:** Generates creative, polished code that avoids cookie-cutter design patterns.
+
+### 5. TypeScript Safety (`typescript-safety`)
 Ensures TypeScript code follows strict mode compliance and proper type annotations.
 
 **Triggers when:**
@@ -19,7 +88,7 @@ Ensures TypeScript code follows strict mode compliance and proper type annotatio
 - Checks React Query hook typing
 - Validates component props interfaces
 
-### 2. Supabase Query Patterns (`supabase-query-patterns`)
+### 6. Supabase Query Patterns (`supabase-query-patterns`)
 Enforces consistent React Query and Supabase data fetching patterns.
 
 **Triggers when:**
@@ -34,7 +103,7 @@ Enforces consistent React Query and Supabase data fetching patterns.
 - Query key conventions
 - Real-time subscription patterns
 
-### 3. Component Architecture (`component-architecture`)
+### 7. Component Architecture (`component-architecture`)
 Ensures consistent React component structure and shadcn/ui patterns.
 
 **Triggers when:**
@@ -49,7 +118,7 @@ Ensures consistent React component structure and shadcn/ui patterns.
 - Form validation with react-hook-form + zod
 - Modal and dialog patterns
 
-### 4. TailwindCSS Styling (`tailwind-styling`)
+### 8. TailwindCSS Styling (`tailwind-styling`)
 Maintains consistent TailwindCSS styling and design system.
 
 **Triggers when:**
@@ -64,7 +133,7 @@ Maintains consistent TailwindCSS styling and design system.
 - Responsive design patterns
 - Typography and spacing scales
 
-### 5. Testing Implementation (`testing-implementation`)
+### 9. Testing Implementation (`testing-implementation`)
 Guides Jest and React Testing Library test implementation.
 
 **Triggers when:**
@@ -79,9 +148,7 @@ Guides Jest and React Testing Library test implementation.
 - React Query hook testing
 - Mock patterns for Supabase
 
-**Note:** This Skill runs in a forked context to avoid cluttering the main conversation with verbose test output.
-
-### 6. Security Review (`security-review`)
+### 10. Security Review (`security-review`)
 Reviews code for security vulnerabilities and best practices.
 
 **Triggers when:**
@@ -127,6 +194,14 @@ What Skills are available?
 ```
 .claude/
 ├── skills/
+│   ├── brainstorming/
+│   │   └── SKILL.md
+│   ├── writing-plans/
+│   │   └── SKILL.md
+│   ├── writing-skills/
+│   │   └── SKILL.md
+│   ├── frontend-design/
+│   │   └── SKILL.md
 │   ├── typescript-safety/
 │   │   └── SKILL.md
 │   ├── supabase-query-patterns/

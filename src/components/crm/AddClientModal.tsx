@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCreateClient } from "@/lib/queries/clients";
 import {
@@ -25,8 +25,16 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface AddClientModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
+  onSuccess?: () => void;
   defaultCompanyName?: string;
+  prefilledData?: {
+    contact_name?: string;
+    company_name?: string;
+    email?: string;
+    phone?: string;
+  };
   onAdd?: (client: {
     name: string;
     email: string;
@@ -37,16 +45,26 @@ interface AddClientModalProps {
   }) => void;
 }
 
-export function AddClientModal({ open, onOpenChange, defaultCompanyName, onAdd }: AddClientModalProps) {
+export function AddClientModal({ open, onOpenChange, onClose, onSuccess, defaultCompanyName, prefilledData, onAdd }: AddClientModalProps) {
   const { user } = useAuth();
   const createClient = useCreateClient();
-  
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [company, setCompany] = useState(defaultCompanyName || "");
   const [status, setStatus] = useState("prospect");
   const [notes, setNotes] = useState("");
+
+  // Update form when prefilledData changes
+  useEffect(() => {
+    if (prefilledData) {
+      if (prefilledData.contact_name) setName(prefilledData.contact_name);
+      if (prefilledData.company_name) setCompany(prefilledData.company_name);
+      if (prefilledData.email) setEmail(prefilledData.email);
+      if (prefilledData.phone) setPhone(prefilledData.phone);
+    }
+  }, [prefilledData]);
 
   const handleSubmit = async () => {
     if (!user?.id) {
@@ -85,8 +103,14 @@ export function AddClientModal({ open, onOpenChange, defaultCompanyName, onAdd }
 
       // Call the optional callback for backward compatibility
       onAdd?.({ name, email, phone, company, status, notes });
-      
-      onOpenChange(false);
+
+      // Call onSuccess if provided
+      onSuccess?.();
+
+      // Handle modal close
+      if (onOpenChange) onOpenChange(false);
+      if (onClose) onClose();
+
       resetForm();
     } catch (error) {
       console.error('Error creating client:', error);
@@ -107,8 +131,13 @@ export function AddClientModal({ open, onOpenChange, defaultCompanyName, onAdd }
     setNotes("");
   };
 
+  const handleClose = (value: boolean) => {
+    if (onOpenChange) onOpenChange(value);
+    if (!value && onClose) onClose();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg" data-testid="modal-add-client">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -193,7 +222,7 @@ export function AddClientModal({ open, onOpenChange, defaultCompanyName, onAdd }
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} data-testid="button-cancel-client">
+          <Button variant="outline" onClick={() => handleClose(false)} data-testid="button-cancel-client">
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={createClient.isPending || !name.trim() || !company.trim()} data-testid="button-save-client">

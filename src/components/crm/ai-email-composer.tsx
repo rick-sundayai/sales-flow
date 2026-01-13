@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { geminiService, type EmailDraft } from '@/lib/services/gemini-service';
+import { generateEmailDraft, type EmailDraft } from '@/lib/services/gemini-service-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -46,17 +46,30 @@ export function AIEmailComposer({ dealData, onSendEmail }: AIEmailComposerProps)
 
   const generateEmailMutation = useMutation({
     mutationFn: () => {
-      if (!dealData || !recipientName) {
+      if (!dealData || !recipientName || !recipientEmail) {
         throw new Error('Missing required data');
       }
-      
-      return geminiService.generateEmailDraft({
-        dealTitle: dealData.title,
-        dealStage: dealData.stage,
-        clientName: recipientName,
-        companyName: dealData.client.company_name,
-        purpose: emailPurpose,
-        customInstructions: customInstructions || undefined
+
+      const purposeMap = {
+        'follow-up': 'Follow up on our recent discussion',
+        'proposal': 'Send proposal details',
+        'closing': 'Move forward with closing the deal',
+        'check-in': 'Check in on deal status',
+        'introduction': 'Introduce our services'
+      };
+
+      return generateEmailDraft({
+        tone: 'professional',
+        purpose: customInstructions || purposeMap[emailPurpose],
+        recipient: {
+          name: recipientName,
+          company: dealData.client.company_name,
+          email: recipientEmail,
+        },
+        context: {
+          dealTitle: dealData.title,
+          dealStage: dealData.stage,
+        }
       });
     },
     onSuccess: (data) => {

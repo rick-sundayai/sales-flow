@@ -385,6 +385,151 @@ export interface Database {
           updated_at?: string
         }
       }
+      job_postings: {
+        Row: {
+          id: string
+          created_at: string | null
+          updated_at: string | null
+          company_id: string | null
+          title: string
+          job_link: string
+          location: string | null
+          salary_range: string | null
+          posted_date: string | null
+          description: string | null
+          priority_score: number | null
+          priority_reasoning: string | null
+          status: 'new' | 'qualified' | 'disqualified' | 'contacted' | 'interviewing' | 'placed' | 'closed' | null
+          source: string | null
+          raw_data: Json | null
+          outreach_status: 'pending' | 'draft_created' | 'sent' | 'replied' | 'bounced' | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string | null
+          updated_at?: string | null
+          company_id?: string | null
+          title: string
+          job_link: string
+          location?: string | null
+          salary_range?: string | null
+          posted_date?: string | null
+          description?: string | null
+          priority_score?: number | null
+          priority_reasoning?: string | null
+          status?: 'new' | 'qualified' | 'disqualified' | 'contacted' | 'interviewing' | 'placed' | 'closed' | null
+          source?: string | null
+          raw_data?: Json | null
+          outreach_status?: 'pending' | 'draft_created' | 'sent' | 'replied' | 'bounced' | null
+        }
+        Update: {
+          id?: string
+          created_at?: string | null
+          updated_at?: string | null
+          company_id?: string | null
+          title?: string
+          job_link?: string
+          location?: string | null
+          salary_range?: string | null
+          posted_date?: string | null
+          description?: string | null
+          priority_score?: number | null
+          priority_reasoning?: string | null
+          status?: 'new' | 'qualified' | 'disqualified' | 'contacted' | 'interviewing' | 'placed' | 'closed' | null
+          source?: string | null
+          raw_data?: Json | null
+          outreach_status?: 'pending' | 'draft_created' | 'sent' | 'replied' | 'bounced' | null
+        }
+      }
+      leads: {
+        Row: {
+          id: string
+          assigned_to: string
+          job_title: string
+          company_name: string
+          salary_min: number | null
+          salary_max: number | null
+          salary_currency: string
+          location: string | null
+          remote_type: 'remote' | 'hybrid' | 'onsite' | null
+          summary: string | null
+          description: string | null
+          requirements: string[]
+          benefits: string[]
+          source: string | null
+          source_url: string | null
+          is_enriched: boolean
+          enrichment_data: Json | null
+          status: 'new' | 'skipped' | 'rejected' | 'converted'
+          skipped_at: string | null
+          rejected_at: string | null
+          converted_at: string | null
+          converted_to_deal_id: string | null
+          contact_name: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          assigned_to: string
+          job_title: string
+          company_name: string
+          salary_min?: number | null
+          salary_max?: number | null
+          salary_currency?: string
+          location?: string | null
+          remote_type?: 'remote' | 'hybrid' | 'onsite' | null
+          summary?: string | null
+          description?: string | null
+          requirements?: string[]
+          benefits?: string[]
+          source?: string | null
+          source_url?: string | null
+          is_enriched?: boolean
+          enrichment_data?: Json | null
+          status?: 'new' | 'skipped' | 'rejected' | 'converted'
+          skipped_at?: string | null
+          rejected_at?: string | null
+          converted_at?: string | null
+          converted_to_deal_id?: string | null
+          contact_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          assigned_to?: string
+          job_title?: string
+          company_name?: string
+          salary_min?: number | null
+          salary_max?: number | null
+          salary_currency?: string
+          location?: string | null
+          remote_type?: 'remote' | 'hybrid' | 'onsite' | null
+          summary?: string | null
+          description?: string | null
+          requirements?: string[]
+          benefits?: string[]
+          source?: string | null
+          source_url?: string | null
+          is_enriched?: boolean
+          enrichment_data?: Json | null
+          status?: 'new' | 'skipped' | 'rejected' | 'converted'
+          skipped_at?: string | null
+          rejected_at?: string | null
+          converted_at?: string | null
+          converted_to_deal_id?: string | null
+          contact_name?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       client_summary: {

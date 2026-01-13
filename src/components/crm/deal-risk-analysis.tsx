@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { geminiService, type DealRiskAnalysis } from '@/lib/services/gemini-service';
+import { analyzeDealRisks, type DealRiskAnalysis } from '@/lib/services/gemini-service-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,7 +45,7 @@ export function DealRiskAnalysisComponent({ dealData }: DealRiskAnalysisProps) {
   const [analysis, setAnalysis] = useState<DealRiskAnalysis | null>(null);
 
   const analyzeRiskMutation = useMutation({
-    mutationFn: () => geminiService.analyzeDealRisks(dealData),
+    mutationFn: () => analyzeDealRisks(dealData.id),
     onSuccess: (data) => {
       setAnalysis(data);
     },

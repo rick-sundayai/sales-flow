@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo+Black&family=JetBrains+Mono:wght@400;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -242,4 +244,37 @@
     pointer-events: none;
   }
 
+  /* Daily Stack Modal Custom Styles */
+  .font-heading {
+    font-family: 'Bebas Neue', 'Archivo Black', sans-serif;
+  }
+
+  .daily-stack-modal .DialogOverlay {
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+  }
+
+  .daily-stack-complete .DialogOverlay {
+    background: rgba(0, 0, 0, 0.90);
+    backdrop-filter: blur(16px);
+  }
+
+  /* Custom scrollbar for lead cards */
+  .daily-stack-modal *::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .daily-stack-modal *::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+
+  .daily-stack-modal *::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 4px;
+  }
+
+  .daily-stack-modal *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary) / 0.7);
+  }
 }

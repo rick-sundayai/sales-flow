@@ -1,16 +1,33 @@
-# Next.js + Supabase Authentication Template
+# SalesFlow CRM  🚀
 
-A clean, production-ready authentication template built with **Next.js 15**, **Supabase**, and **TypeScript**. This template provides a complete authentication system with user management, route protection, and a beautiful dark-themed UI.
+A production-ready, full-featured CRM application built with **Next.js 15**, **Supabase**, and **TypeScript**. SalesFlow provides comprehensive client relationship management, deal pipeline tracking, activity monitoring, and enterprise-grade security features with a beautiful dark-themed UI.
 
 ## ✨ Features
 
-- 🔐 **Complete Authentication System** - Login, Register, Password Reset
-- 🛡️ **Route Protection** - Middleware-based authentication
-- 👤 **User Profiles** - Automatic profile creation and management
-- 🎨 **Modern UI** - Dark theme with Tailwind CSS
-- 🔒 **Security First** - Row Level Security (RLS) policies
+### Core CRM Capabilities
+- 👥 **Client Management** - Track clients and prospects with detailed contact information
+- 🏢 **Company Management** - Separate company entities for better organization
+- 💼 **Deal Pipeline** - Visual Kanban board for sales opportunity tracking
+- 📊 **Activity Tracking** - Log emails, calls, meetings, tasks, and notes
+- 📧 **Email Management** - Compose and track email communications
+- 📅 **Calendar Integration** - Schedule and manage meetings
+- 🤖 **AI-Powered Features** - Email composition and deal risk analysis (Google Gemini)
+- 📈 **Dashboard Analytics** - Real-time metrics and KPIs
+
+### Security & Compliance
+- 🔐 **Multi-Factor Authentication (2FA)** - TOTP-based with backup codes
+- 🛡️ **Comprehensive Audit Logging** - Track all user actions with risk assessment
+- 🔒 **GDPR Compliance** - Data export and deletion capabilities
+- 👤 **Session Management** - Secure session tracking with automatic cleanup
+- 🔑 **Row Level Security (RLS)** - Database-level data isolation
+- 🚨 **Rate Limiting** - Protection against brute force attacks
+
+### Developer Experience
+- ⚡ **Next.js 15** - Latest features with App Router and Turbopack
+- 🎨 **Modern UI** - shadcn/ui components (50+) with dark theme
 - 📱 **Responsive Design** - Mobile-first approach
-- ⚡ **Next.js 15** - Latest features with App Router
+- 🔧 **Type Safety** - Strict TypeScript throughout
+- 🧪 **Comprehensive Testing** - Jest + React Testing Library
 - 🚀 **Production Ready** - Optimized build configuration
 
 ## 🚀 Quick Start
@@ -49,8 +66,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 
 1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
 2. Navigate to **SQL Editor**
-3. Copy and paste the contents of `database/setup.sql`
-4. Click **Run** to execute the script
+3. Run the SQL scripts in this order:
+   - `database/setup.sql` - User profiles and base tables
+   - `database/crm-schema.sql` - Core CRM schema (clients, deals, activities)
+   - `database/companyTable.sql` - Company entities
+   - `database/audit-logs-schema.sql` - Security audit logging
+   - `database/gdpr-compliance-schema.sql` - GDPR compliance tables
+   - `database/add-2fa-fields.sql` - Two-factor authentication
+   - `database/seed.sql` - (Optional) Sample data for testing
 
 ### 4. Start Development
 
@@ -65,24 +88,65 @@ Your app will be available at `http://localhost:3000`
 ```
 src/
 ├── app/                    # Next.js 15 App Router
-│   ├── auth/              # Authentication pages
-│   │   ├── login/         # Login page
-│   │   ├── register/      # Registration page
-│   │   └── reset-password/ # Password reset
-│   ├── dashboard/         # Protected dashboard
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Homepage
-├── components/            # React components
-│   ├── auth/             # Authentication forms
-│   └── ui/               # UI components
-├── hooks/                # Custom React hooks
-│   └── useAuth.tsx       # Authentication hook
-├── lib/                  # Utilities and services
-│   ├── auth/             # Auth service
-│   ├── supabase/         # Supabase clients
-│   └── types/            # TypeScript types
-└── middleware.ts         # Route protection
+│   ├── auth/              # Authentication pages (login, register, reset)
+│   ├── dashboard/         # Protected CRM area
+│   │   ├── activities/    # Activity tracking page
+│   │   ├── calendar/      # Calendar/meetings view
+│   │   ├── clients/       # Client management
+│   │   ├── companies/     # Company management
+│   │   ├── emails/        # Email management
+│   │   ├── pipeline/      # Deal pipeline (Kanban view)
+│   │   ├── reports/       # Analytics and reporting
+│   │   ├── settings/      # User settings & 2FA
+│   │   └── page.tsx       # Dashboard home
+│   ├── api/               # API routes
+│   │   ├── auth/          # Auth endpoints (2FA, sessions)
+│   │   ├── admin/         # Admin endpoints (audit logs)
+│   │   └── gdpr/          # GDPR compliance endpoints
+│   ├── globals.css        # Global styles with CSS variables
+│   ├── layout.tsx         # Root layout with providers
+│   └── page.tsx           # Public homepage
+├── components/
+│   ├── auth/              # Auth forms (Login, Register)
+│   ├── crm/               # 15+ CRM-specific components
+│   │   ├── AddClientModal.tsx, EditClientModal.tsx
+│   │   ├── AddDealModal.tsx, EditDealModal.tsx
+│   │   ├── AddCompanyModal.tsx, EditCompanyModal.tsx
+│   │   ├── AddActivityModal.tsx, ActivityItem.tsx
+│   │   ├── DealCard.tsx, PipelineColumn.tsx
+│   │   ├── ComposeEmailModal.tsx
+│   │   ├── ScheduleMeetingModal.tsx
+│   │   ├── ai-email-composer.tsx
+│   │   ├── deal-risk-analysis.tsx
+│   │   └── MetricCard.tsx, QuickActions.tsx
+│   ├── dashboard/         # Dashboard layout components
+│   ├── layout/            # App shell (Navbar, Sidebar)
+│   └── ui/                # 50+ shadcn/ui components
+├── hooks/                 # Custom React hooks
+│   ├── useAuth.tsx        # Authentication hook
+│   └── useMounted.tsx     # Hydration hook
+├── lib/
+│   ├── auth/              # Authentication service
+│   ├── providers/         # React Query provider
+│   ├── queries/           # TanStack Query hooks
+│   │   ├── clients.ts     # Client CRUD
+│   │   ├── companies.ts   # Company management
+│   │   ├── deals.ts       # Deal pipeline
+│   │   ├── activities.ts  # Activity tracking
+│   │   ├── meetings.ts    # Calendar operations
+│   │   └── dashboard.ts   # Dashboard metrics
+│   ├── schemas/           # Zod validation schemas
+│   ├── security/          # Security utilities
+│   │   ├── audit-logger.ts
+│   │   ├── two-factor-auth.ts
+│   │   ├── session-manager.ts
+│   │   ├── password-validation.ts
+│   │   └── gdpr-compliance.ts
+│   ├── services/          # Business logic and API calls
+│   ├── supabase/          # Supabase client configuration
+│   ├── types/             # TypeScript type definitions
+│   └── utils/             # Utility functions
+└── middleware.ts          # Route protection and auth redirects
 ```
 
 ## 🔒 Authentication Flow
@@ -107,35 +171,82 @@ src/
 
 ## 🗄️ Database Schema
 
-The template uses a simple but effective schema:
+SalesFlow uses a comprehensive CRM schema with multiple interconnected tables:
 
-### `user_profiles` table
-- `id` - Primary key (UUID)
-- `user_id` - Foreign key to `auth.users`
-- `email` - User's email address
-- `first_name` - User's first name
-- `last_name` - User's last name
-- `full_name` - Generated full name
-- `avatar_url` - Profile picture URL (optional)
-- `created_at` - Creation timestamp
-- `updated_at` - Last update timestamp
+### Core CRM Tables
+- **`user_profiles`** - Extended user data (name, avatar, role, 2FA settings)
+- **`clients`** - Customer/prospect information (contact details, status, industry)
+- **`companies`** - Separate company entities for better data normalization
+- **`deals`** - Sales opportunities (value, stage, probability, expected close date)
+- **`activities`** - Emails, calls, meetings, tasks, notes (linked to clients/deals)
+- **`meetings`** - Calendar events with Google Calendar integration
+- **`emails`** - Email tracking and management
+
+### Security & Compliance Tables
+- **`audit_logs`** - Comprehensive audit trail with risk assessment
+- **`user_sessions`** - Session management and tracking
+- **`gdpr_requests`** - Data export/deletion requests
+- **`two_factor_backup_codes`** - 2FA backup codes
+
+### Key Relationships
+```
+user_profiles → clients → deals → activities
+              → companies
+              → meetings, emails
+              → audit_logs, user_sessions
+```
 
 ### Security Features
-- **Row Level Security (RLS)** - Users can only access their own data
-- **Automatic Profile Creation** - Triggered on user signup
-- **Type Safety** - Full TypeScript integration
+- **Row Level Security (RLS)** - Database-level data isolation per user
+- **Comprehensive Audit Logging** - All actions tracked with risk levels
+- **Two-Factor Authentication** - TOTP-based with backup codes
+- **GDPR Compliance** - Built-in data export and deletion capabilities
+- **Session Management** - Secure session tracking with automatic cleanup
+- **Automated Triggers** - Auto-timestamps, stage tracking, contact updates
 
 ## 🛠️ Available Scripts
 
 ```bash
 # Development
-npm run dev          # Start development server with Turbopack
-npm run build        # Build for production
-npm run start        # Start production server
+npm run dev          # Start Next.js dev server with Turbopack (port 3000)
+npm run build        # Build for production with Turbopack
+npm run start        # Start production Next.js server
 
 # Code Quality
-npm run lint         # Run ESLint
-npm run type-check   # TypeScript type checking
+npm run lint         # Run ESLint with Next.js rules
+npm run type-check   # TypeScript compilation check (tsc --noEmit)
+
+# Testing
+npm run test         # Run Jest tests
+npm run test:watch   # Run tests in watch mode
+npm run test:coverage # Run tests with coverage report
+npm run test:ui      # Run tests in watch mode with verbose output
+npm run test:ci      # Run tests in CI mode with coverage
+
+# Build Analysis & Database
+npm run build:analyze # Analyze bundle size
+npm run db:generate-types # Generate Supabase TypeScript types
+npm run db:validate  # Validate database schema and connections
+npm run validate-env # Validate environment variables
+```
+
+## 🤖 AI Features
+
+SalesFlow includes powerful AI capabilities powered by Google Gemini:
+
+### AI Email Composer
+- **Context-Aware Generation** - Automatically includes client and deal context
+- **Tone Selection** - Choose between professional, casual, and persuasive tones
+- **Deal-Specific Context** - Injects relevant deal information for personalized emails
+
+### Deal Risk Analysis
+- **Probability Assessment** - Analyzes deal health and likelihood of closing
+- **Risk Factor Identification** - Highlights potential issues and concerns
+- **Actionable Recommendations** - Provides specific steps to improve deal outcomes
+
+To enable AI features, add your Gemini API key to `.env.local`:
+```env
+NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-api-key
 ```
 
 ## 🎨 Customization
@@ -153,15 +264,23 @@ colors: {
 }
 ```
 
-### Adding New Pages
-1. Create page in `src/app/your-page/page.tsx`
-2. Add route protection in `src/middleware.ts` if needed
-3. Import and use `useAuth` hook for user data
+### Adding New CRM Features
+1. Create database tables in a new migration file
+2. Generate TypeScript types: `npm run db:generate-types`
+3. Create React Query hooks in `src/lib/queries/`
+4. Build UI components in `src/components/crm/`
+5. Add pages in `src/app/dashboard/`
 
 ### Extending User Profiles
 1. Update database schema in `database/setup.sql`
-2. Update TypeScript types in `src/lib/types/auth.ts`
-3. Modify the profile creation trigger function
+2. Generate new types: `npm run db:generate-types`
+3. Update forms and components as needed
+
+### Customizing Security
+- Configure 2FA settings in user settings page
+- Adjust audit log retention in `src/lib/security/audit-logger.ts`
+- Modify rate limits in `src/lib/security/rate-limiter.ts`
+- Update GDPR workflows in `src/lib/security/gdpr-compliance.ts`
 
 ## 🚀 Deployment
 
@@ -173,16 +292,61 @@ colors: {
 
 ### Environment Variables for Production
 ```env
+# Required
 NEXT_PUBLIC_SUPABASE_URL=your-production-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
+
+# Optional - AI Features
+NEXT_PUBLIC_GEMINI_API_KEY=your-gemini-api-key
+
+# Security (auto-generated if not provided)
+NEXTAUTH_SECRET=your-nextauth-secret
+CSRF_SECRET=your-csrf-secret
 ```
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Framework**: Next.js 15 with App Router and Turbopack
+- **UI Library**: React 19 with TypeScript (strict mode)
+- **Component Library**: shadcn/ui (50+ components)
+- **Styling**: TailwindCSS with custom design system
+- **State Management**: TanStack Query (React Query) for server state
+- **Forms**: react-hook-form + Zod validation
+- **AI Integration**: Google Gemini API
+
+### Backend & Database
+- **Database**: PostgreSQL via Supabase
+- **Authentication**: Supabase Auth with 2FA support
+- **Real-time**: Supabase Realtime subscriptions
+- **API**: Next.js API Routes (Route Handlers)
+- **Security**: Row Level Security (RLS) policies
+
+### Testing & Quality
+- **Testing Framework**: Jest + React Testing Library
+- **Type Checking**: TypeScript with strict mode
+- **Linting**: ESLint with Next.js rules
+- **Coverage**: 70%+ target across the board
+
+### DevOps
+- **Build Tool**: Turbopack (Next.js 15)
+- **Deployment**: Vercel-optimized
+- **Environment Management**: dotenv with validation
 
 ## 📚 Learn More
 
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Supabase Documentation](https://supabase.com/docs)
-- [Tailwind CSS](https://tailwindcss.com/docs)
+### Documentation
+- [Next.js Documentation](https://nextjs.org/docs) - Next.js 15 features and App Router
+- [Supabase Documentation](https://supabase.com/docs) - Database, Auth, and Realtime
+- [TailwindCSS](https://tailwindcss.com/docs) - Utility-first CSS framework
+- [shadcn/ui](https://ui.shadcn.com) - Re-usable component library
+- [TanStack Query](https://tanstack.com/query/latest) - Powerful data synchronization
+- [Google Gemini API](https://ai.google.dev/gemini-api/docs) - AI integration
+
+### Project Documentation
+- [CLAUDE.md](CLAUDE.md) - Comprehensive project architecture and patterns
+- [.claude/README.md](.claude/README.md) - Claude Code skills for this project
 
 ## 🤝 Contributing
 
@@ -195,15 +359,84 @@ NEXT_PUBLIC_APP_URL=https://yourdomain.com
 
 MIT License - feel free to use this template for any project!
 
-## 🆘 Support
+## 🎯 Key Features Showcase
 
-If you encounter any issues:
+### Dashboard
+- Real-time metrics and KPIs
+- Quick actions for common tasks
+- Upcoming meetings and activities
+- Recent client interactions
 
-1. Check the [Issues](https://github.com/your-repo/issues) section
-2. Ensure your Supabase setup is correct
-3. Verify environment variables are set
-4. Check browser console for errors
+### Client Management
+- Comprehensive client profiles
+- Status tracking (Lead, Prospect, Active, Inactive)
+- Industry categorization
+- Contact information management
+
+### Deal Pipeline
+- Visual Kanban board
+- Drag-and-drop deal movement
+- Stage-based organization (Lead, Qualified, Proposal, Negotiation, Closed)
+- Deal value and probability tracking
+- Priority indicators
+
+### Activity Tracking
+- Log all client interactions (emails, calls, meetings, tasks, notes)
+- Timeline view of activities
+- Filter by type and status
+- Link activities to clients and deals
+
+### Security & Compliance
+- Two-factor authentication (2FA) with TOTP
+- Comprehensive audit logging with risk assessment
+- GDPR-compliant data export and deletion
+- Session management and monitoring
+- Rate limiting and brute force protection
+
+## 🆘 Support & Troubleshooting
+
+### Common Issues
+
+**Database Connection Issues**
+- Verify Supabase URL and anon key in `.env.local`
+- Check that RLS policies are enabled
+- Ensure all migration scripts ran successfully
+
+**Authentication Problems**
+- Clear browser cookies and local storage
+- Check Supabase Auth settings in dashboard
+- Verify email confirmation settings
+
+**Build Errors**
+- Run `npm run type-check` to identify TypeScript issues
+- Clear `.next` folder and rebuild: `rm -rf .next && npm run build`
+- Ensure Node.js version is 18 or higher
+
+**Testing Issues**
+- Clear Jest cache: `npm run test -- --clearCache`
+- Check mock implementations in `src/__tests__/__mocks__/`
+- Verify test environment variables
+
+### Getting Help
+
+1. Check the [CLAUDE.md](CLAUDE.md) for architecture details
+2. Review database schema files in `database/`
+3. Examine existing components for patterns
+4. Run `npm run validate-env` to check environment setup
+
+## 📝 License
+
+MIT License - feel free to use this for personal or commercial projects!
+
+## 🙏 Acknowledgments
+
+Built with modern web technologies and best practices:
+- Next.js 15 App Router architecture
+- Supabase for backend infrastructure
+- shadcn/ui for beautiful components
+- TanStack Query for data management
+- Google Gemini for AI capabilities
 
 ---
 
-**Happy coding!** 🚀
+**Ready to manage your sales pipeline like a pro!** 🚀

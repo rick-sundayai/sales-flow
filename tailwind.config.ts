@@ -91,6 +91,11 @@ const config: Config = {
   			],
   			mono: [
   				'var(--font-geist-mono)'
+  			],
+  			heading: [
+  				'Bebas Neue',
+  				'Archivo Black',
+  				'sans-serif'
   			]
   		},
   		keyframes: {
