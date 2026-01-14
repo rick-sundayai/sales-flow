@@ -3,6 +3,7 @@
 
 # SECURITY
 SECURITY_*
+src/app/test-invite/
 
 # Documents
 /documents/
