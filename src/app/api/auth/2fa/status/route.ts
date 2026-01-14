@@ -24,20 +24,25 @@ export async function GET(req: NextRequest) {
     }
 
     // Get 2FA status from user profile
+    // First check if the profile exists and has 2FA columns
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
-      .select(`
-        two_factor_enabled,
-        two_factor_secret,
-        two_factor_secret_temp,
-        two_factor_backup_codes,
-        two_factor_enabled_at,
-        two_factor_last_used
-      `)
-      .eq('id', user.id)
+      .select('*')
+      .eq('user_id', user.id)
       .single();
 
     if (profileError) {
+      // If no profile found, return 2FA as disabled (user needs to complete setup)
+      if (profileError.code === 'PGRST116') {
+        const status: TwoFactorStatus = {
+          isEnabled: false,
+          isConfigured: false,
+          backupCodesRemaining: undefined,
+          lastUsed: undefined,
+        };
+        return NextResponse.json({ success: true, status });
+      }
+
       logger.error('Failed to fetch 2FA status', {
         action: '2fa_status_fetch_failed',
         userId: user.id,
@@ -53,9 +58,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const isEnabled = profile?.two_factor_enabled || false;
+    // Check if 2FA columns exist (they may not if migration wasn't run)
+    const isEnabled = profile?.two_factor_enabled ?? false;
     const isConfigured = !!(profile?.two_factor_secret || profile?.two_factor_secret_temp);
-    const backupCodesRemaining = profile?.two_factor_backup_codes?.length || 0;
+    const backupCodesRemaining = profile?.two_factor_backup_codes?.length ?? 0;
 
     const status: TwoFactorStatus = {
       isEnabled,

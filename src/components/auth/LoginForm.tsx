@@ -134,23 +134,13 @@ export default function LoginForm() {
             )}
           </button>
 
-          <div className="space-y-4 text-center">
+          <div className="text-center">
             <Link
               href="/auth/reset-password"
               className="text-primary hover:text-primary/80 text-sm font-medium transition-colors"
             >
               Forgot your password?
             </Link>
-
-            <div className="text-gray-400 text-sm">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/auth/register"
-                className="text-primary hover:text-primary/80 font-medium transition-colors"
-              >
-                Create Account
-              </Link>
-            </div>
           </div>
         </form>
       </div>

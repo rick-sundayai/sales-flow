@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/utils/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -73,7 +74,11 @@ export async function POST(request: NextRequest) {
       .eq('id', leadId)
 
     if (updateError) {
-      console.error('Failed to update lead enrichment status:', updateError)
+      logger.error('Failed to update lead enrichment status', {
+        action: 'lead_enrichment_update_failed',
+        error: updateError as Error,
+        metadata: { leadId },
+      })
     }
 
     return NextResponse.json({
@@ -81,7 +86,10 @@ export async function POST(request: NextRequest) {
       message: 'Enrichment triggered successfully',
     })
   } catch (error) {
-    console.error('Enrichment error:', error)
+    logger.error('Lead enrichment failed', {
+      action: 'lead_enrichment_failed',
+      error: error as Error,
+    })
     return NextResponse.json(
       { error: 'Failed to trigger enrichment' },
       { status: 500 }

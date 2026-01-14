@@ -32,10 +32,11 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Define public routes that don't require authentication
+  // Note: /auth/register removed - app is invite-only
   const publicRoutes = [
-    '/auth/login', 
-    '/auth/register', 
+    '/auth/login',
     '/auth/reset-password',
+    '/auth/setup',  // Allow invite verification (hash token parsed client-side)
     '/'
   ]
   
@@ -46,8 +47,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // If user is logged in and trying to access auth pages, redirect to dashboard
-  if (user && pathname.startsWith('/auth/')) {
+  // If user is logged in and trying to access auth pages (except setup), redirect to dashboard
+  // /auth/setup is excluded because invited users need to set their password after verification
+  if (user && pathname.startsWith('/auth/') && pathname !== '/auth/setup') {
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

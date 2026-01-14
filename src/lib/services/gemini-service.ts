@@ -1,7 +1,22 @@
+/**
+ * Gemini AI Service - Server-side only
+ *
+ * SECURITY WARNING: This service should ONLY be imported by server-side code
+ * (API routes, Server Components). Never import this in client components.
+ *
+ * For client-side AI functionality, use the secure client wrapper:
+ * import { generateContent, analyzeDealRisks, generateEmailDraft } from '@/lib/services/gemini-service-client';
+ *
+ * The client wrapper calls secure API routes that handle API key protection
+ * and rate limiting.
+ */
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Google AI
-const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY || '');
+// Initialize Google AI with server-side only API key
+// SECURITY: Using GEMINI_API_KEY (without NEXT_PUBLIC_ prefix) ensures the key
+// is never exposed to the client-side JavaScript bundle
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export interface DealRiskAnalysis {
   riskLevel: 'low' | 'medium' | 'high';

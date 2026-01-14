@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useMutation } from "@tanstack/react-query";
-import { geminiService } from "@/lib/services/gemini-service";
+import { generateContent } from "@/lib/services/gemini-service-client";
 import { useClients } from "@/lib/queries/clients";
 import { useDeals } from "@/lib/queries/deals";
 import { SearchBar } from "@/components/crm/SearchBar";
@@ -105,7 +105,7 @@ export default function CalendarPage() {
     mutationFn: async (meeting: Meeting) => {
       const client = clients.find(c => c.id === meeting.clientId);
       const deal = deals.find(d => d.id === meeting.dealId);
-      
+
       const prompt = `Generate comprehensive meeting preparation for this upcoming meeting:
 
 Meeting: ${meeting.title}
@@ -141,16 +141,14 @@ Please provide meeting preparation in JSON format with the following structure:
 }
 
 Focus on actionable insights and specific recommendations.`;
-      
-      const result = await geminiService.generateContent(prompt);
-      const responseText = result.response.text();
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
-      if (!jsonMatch) {
-        throw new Error('Invalid response format from AI');
+
+      const result = await generateContent({ prompt, type: 'meeting-prep' });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate meeting prep');
       }
-      
-      return JSON.parse(jsonMatch[0]) as MeetingPrep;
+
+      return result.data as MeetingPrep;
     },
     onSuccess: (data) => {
       setMeetingPrep(data);
@@ -183,16 +181,14 @@ Please provide scheduling suggestions in JSON format:
   "alternativeTimes": ["alternative 1", "alternative 2", "alternative 3"],
   "conflictWarnings": ["potential conflict 1", "potential conflict 2"]
 }`;
-      
-      const result = await geminiService.generateContent(prompt);
-      const responseText = result.response.text();
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      
-      if (!jsonMatch) {
-        throw new Error('Invalid response format from AI');
+
+      const result = await generateContent({ prompt, type: 'scheduling-suggestion' });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate scheduling suggestion');
       }
-      
-      return JSON.parse(jsonMatch[0]) as SchedulingSuggestion;
+
+      return result.data as SchedulingSuggestion;
     },
     onSuccess: (data) => {
       setSchedulingSuggestion(data);

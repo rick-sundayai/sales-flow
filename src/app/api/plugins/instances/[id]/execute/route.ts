@@ -3,17 +3,19 @@ import { createClient } from '@/lib/supabase/server'
 import { auditLogger } from '@/lib/security/audit-logger'
 import { pluginRegistry } from '@/lib/services/plugin-registry'
 import { ReportContext } from '@/lib/types/plugins'
+import { logger } from '@/lib/utils/logger'
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   const startTime = Date.now()
-  
+
   try {
+    const { id } = await params
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
 
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const instance = pluginRegistry.getInstance(params.id)
+    const instance = pluginRegistry.getInstance(id)
     if (!instance || instance.createdBy !== user.id) {
       return NextResponse.json({ error: 'Instance not found' }, { status: 404 })
     }
@@ -46,14 +48,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Execute the report
-    const reportData = await pluginRegistry.generateReport(params.id, context)
+    const reportData = await pluginRegistry.generateReport(id, context)
     const executionTime = Date.now() - startTime
 
     // Log execution in database
     const { error: logError } = await supabase
       .from('plugin_executions')
       .insert([{
-        instance_id: params.id,
+        instance_id: id,
         executed_by: user.id,
         status: 'success',
         execution_duration_ms: executionTime,
@@ -62,16 +64,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       }])
 
     if (logError) {
-      console.error('Failed to log plugin execution:', logError)
+      logger.error('Failed to log plugin execution', {
+        action: 'plugin_execution_log_failed',
+        error: logError as Error,
+        metadata: { instanceId: id },
+      })
     }
 
     // Audit log
     await auditLogger.log({
       action: 'plugin_executed',
       resource: 'plugin_instance',
-      resourceId: params.id,
+      resourceId: id,
       userId: user.id,
-      details: { 
+      details: {
         executionTime,
         rowCount: reportData.rows.length,
         pluginId: instance.pluginId
@@ -84,19 +90,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       generatedAt: new Date().toISOString()
     })
   } catch (error) {
+    const { id } = await params
     const executionTime = Date.now() - startTime
-    console.error('Plugin execution failed:', error)
+    logger.error('Plugin execution failed', {
+      action: 'plugin_execution_failed',
+      error: error as Error,
+      metadata: { instanceId: id, executionTime },
+    })
 
     // Log failed execution
     try {
       const supabase = await createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      
+
       if (user) {
         await supabase
           .from('plugin_executions')
           .insert([{
-            instance_id: params.id,
+            instance_id: id,
             executed_by: user.id,
             status: 'failed',
             execution_duration_ms: executionTime,
@@ -104,14 +115,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
           }])
       }
     } catch (logError) {
-      console.error('Failed to log failed execution:', logError)
+      logger.error('Failed to log failed execution', {
+        action: 'plugin_execution_log_failed',
+        error: logError as Error,
+        metadata: { instanceId: id },
+      })
     }
 
     return NextResponse.json(
-      { 
+      {
         error: error instanceof Error ? error.message : 'Plugin execution failed',
         executionTime
-      }, 
+      },
       { status: 500 }
     )
   }

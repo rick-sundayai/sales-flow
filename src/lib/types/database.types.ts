@@ -391,6 +391,7 @@ export interface Database {
           created_at: string | null
           updated_at: string | null
           company_id: string | null
+          company_name: string | null
           title: string
           job_link: string
           location: string | null
@@ -409,6 +410,7 @@ export interface Database {
           created_at?: string | null
           updated_at?: string | null
           company_id?: string | null
+          company_name?: string | null
           title: string
           job_link: string
           location?: string | null
@@ -427,6 +429,7 @@ export interface Database {
           created_at?: string | null
           updated_at?: string | null
           company_id?: string | null
+          company_name?: string | null
           title?: string
           job_link?: string
           location?: string | null

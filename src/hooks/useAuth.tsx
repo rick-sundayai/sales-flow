@@ -76,6 +76,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return authService.resetPassword(data);
   };
 
+  const refreshProfile = async () => {
+    if (user) {
+      const updatedProfile = await authService.getUserProfile(user.id);
+      setProfile(updatedProfile);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -88,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         resetPassword:
           resetPassword as unknown as AuthContextType["resetPassword"],
+        refreshProfile,
       }}
     >
       {children}

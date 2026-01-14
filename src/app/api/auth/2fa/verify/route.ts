@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Invalid verification code format',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );

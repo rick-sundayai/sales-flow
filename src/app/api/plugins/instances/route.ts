@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { auditLogger } from '@/lib/security/audit-logger'
 import { pluginRegistry } from '@/lib/services/plugin-registry'
+import { logger } from '@/lib/utils/logger'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,9 +18,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ instances })
   } catch (error) {
-    console.error('Failed to fetch plugin instances:', error)
+    logger.error('Failed to fetch plugin instances', {
+      action: 'plugin_instances_fetch_failed',
+      error: error as Error,
+    })
     return NextResponse.json(
-      { error: 'Failed to fetch plugin instances' }, 
+      { error: 'Failed to fetch plugin instances' },
       { status: 500 }
     )
   }
@@ -71,9 +75,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ instance }, { status: 201 })
   } catch (error) {
-    console.error('Failed to create plugin instance:', error)
+    logger.error('Failed to create plugin instance', {
+      action: 'plugin_instance_create_failed',
+      error: error as Error,
+    })
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create plugin instance' }, 
+      { error: error instanceof Error ? error.message : 'Failed to create plugin instance' },
       { status: 500 }
     )
   }

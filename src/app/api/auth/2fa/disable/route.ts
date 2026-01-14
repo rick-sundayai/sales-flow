@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Password is required',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );

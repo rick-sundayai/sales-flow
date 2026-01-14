@@ -48,4 +48,5 @@ export interface AuthContextType {
   resetPassword: (
     data: ResetPasswordForm
   ) => Promise<{ success: boolean; error?: string }>;
+  refreshProfile: () => Promise<void>;
 }

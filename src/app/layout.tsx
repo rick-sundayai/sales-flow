@@ -36,7 +36,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <AuthProvider>
               <QueryProvider>
-                {/* <SessionActivityTracker /> */}
+                <SessionActivityTracker />
                 {children}
               </QueryProvider>
             </AuthProvider>

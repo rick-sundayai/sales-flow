@@ -230,7 +230,8 @@ export const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Supabase anon key is required'),
   NEXT_PUBLIC_APP_URL: z.string().url('Invalid app URL'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  NEXT_PUBLIC_GOOGLE_AI_API_KEY: z.string().optional(),
+  // GEMINI_API_KEY is server-side only (no NEXT_PUBLIC_ prefix) for security
+  // It is NOT validated here since it's not exposed to the client
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal('')),
 });
 

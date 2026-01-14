@@ -19,7 +19,7 @@ import { SessionManager } from "@/components/ui/SessionManager";
 import { TwoFactorAuth } from "@/components/ui/TwoFactorAuth";
 
 export default function SettingsPage() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [isEditing, setIsEditing] = useState(false);
   
@@ -61,6 +61,8 @@ export default function SettingsPage() {
         first_name: firstName,
         last_name: lastName,
       });
+      // Refresh profile in auth context to update UI everywhere
+      await refreshProfile();
       setIsEditing(false);
       toast({
         title: "Profile updated",

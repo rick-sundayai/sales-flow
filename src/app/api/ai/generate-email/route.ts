@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { logger } from '@/lib/utils/logger';
 import { z } from 'zod';
+import { aiRateLimit } from '@/lib/security/rate-limiter';
 
 // Input validation schema
 const generateEmailSchema = z.object({
@@ -41,6 +42,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Apply rate limiting (5 requests per minute per user)
+    const rateLimitResult = await aiRateLimit(user.id);
+    if (!rateLimitResult.success) {
+      logger.warn('AI email generation rate limit exceeded', {
+        action: 'email_generation_rate_limited',
+        userId: user.id,
+        metadata: {
+          remaining: rateLimitResult.remaining,
+          reset: rateLimitResult.reset.toISOString(),
+        },
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: rateLimitResult.message,
+          retryAfter: Math.ceil((rateLimitResult.reset.getTime() - Date.now()) / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toISOString(),
+            'Retry-After': Math.ceil((rateLimitResult.reset.getTime() - Date.now()) / 1000).toString(),
+          },
+        }
+      );
+    }
+
     // Validate request body
     const body = await req.json();
     const validation = generateEmailSchema.safeParse(body);
@@ -50,7 +81,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Invalid request data',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );
@@ -140,8 +171,8 @@ The email should feel natural, not AI-generated. Avoid clichés and generic phra
       logger.error('Failed to parse AI response', {
         action: 'email_generation_parse_failed',
         userId: user.id,
-        response: text,
-        error: parseError,
+        metadata: { response: text },
+        error: parseError as Error,
       });
 
       return NextResponse.json(
@@ -164,15 +195,24 @@ The email should feel natural, not AI-generated. Avoid clichés and generic phra
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        subject: emailDraft.subject || 'Follow Up',
-        body: emailDraft.body || '',
-        callToAction: emailDraft.callToAction || 'Please let me know your thoughts.',
-        tone,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          subject: emailDraft.subject || 'Follow Up',
+          body: emailDraft.body || '',
+          callToAction: emailDraft.callToAction || 'Please let me know your thoughts.',
+          tone,
+        },
       },
-    });
+      {
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toISOString(),
+        },
+      }
+    );
   } catch (error) {
     logger.error('Email generation failed', {
       action: 'email_generation_failed',

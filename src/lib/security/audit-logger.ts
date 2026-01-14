@@ -429,12 +429,35 @@ export const auditData = {
 export const audit2FA = {
   enable: async (userId: string, outcome: AuditEvent['outcome'], req?: NextRequest) =>
     createAuditLog({ userId, action: SENSITIVE_ACTIONS.TWO_FA_ENABLE, resource: '2fa', outcome }, req),
-    
+
   disable: async (userId: string, outcome: AuditEvent['outcome'], req?: NextRequest) =>
     createAuditLog({ userId, action: SENSITIVE_ACTIONS.TWO_FA_DISABLE, resource: '2fa', outcome }, req),
-    
+
   codeUse: async (userId: string, outcome: AuditEvent['outcome'], req?: NextRequest) =>
     createAuditLog({ userId, action: SENSITIVE_ACTIONS.TWO_FA_CODE_USE, resource: '2fa', outcome }, req),
+};
+
+/**
+ * Simple audit logger interface for plugin and service usage
+ * Provides a convenient .log() method that wraps createAuditLog
+ */
+export const auditLogger = {
+  log: async (event: {
+    action: string;
+    resource: string;
+    resourceId?: string;
+    userId?: string;
+    details?: Record<string, unknown>;
+  }, req?: NextRequest): Promise<void> => {
+    await createAuditLog({
+      userId: event.userId || 'system',
+      action: event.action,
+      resource: event.resource,
+      resourceId: event.resourceId,
+      details: event.details,
+      outcome: 'success',
+    }, req);
+  },
 };
 
 /**

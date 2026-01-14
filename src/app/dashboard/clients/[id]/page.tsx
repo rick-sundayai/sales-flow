@@ -29,7 +29,7 @@ import {
 import { useClient } from '@/lib/queries/clients';
 import { useDeals } from '@/lib/queries/deals';
 import { useRecentActivities } from '@/lib/queries/activities';
-import { geminiService } from '@/lib/services/gemini-service';
+import { generateContent } from '@/lib/services/gemini-service-client';
 import { useMutation } from '@tanstack/react-query';
 import { logger } from '@/lib/utils/logger';
 
@@ -110,14 +110,13 @@ RESPONSE FORMAT (JSON array):
 ]
       `;
 
-      const result = await geminiService.generateContent(prompt);
-      const response = await result.response;
-      const text = response.text();
-      
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error('No valid JSON found in response');
-      
-      return JSON.parse(jsonMatch[0]) as ClientInsight[];
+      const result = await generateContent({ prompt, type: 'client-insights' });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate insights');
+      }
+
+      return result.data as ClientInsight[];
     },
     onSuccess: (data) => {
       setInsights(data);

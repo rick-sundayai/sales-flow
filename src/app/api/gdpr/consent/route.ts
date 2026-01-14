@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Invalid consent data',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     // Get client information for audit trail
     const forwarded = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
-    const ipAddress = forwarded?.split(',')[0] || realIp || req.ip;
+    const ipAddress = forwarded?.split(',')[0] || realIp || 'unknown';
     const userAgent = req.headers.get('user-agent');
 
     if (isBatch) {

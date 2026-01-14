@@ -127,3 +127,48 @@ export class GeminiServiceClient {
 // Export singleton instance for backward compatibility
 // Components should migrate to using the standalone functions above
 export const geminiService = new GeminiServiceClient();
+
+/**
+ * Generate AI content using server-side API
+ * Used for meeting prep, client insights, and other dynamic content
+ */
+export async function generateContent(params: {
+  prompt: string;
+  type?: 'meeting-prep' | 'client-insights' | 'scheduling-suggestion' | 'general';
+  responseFormat?: 'json' | 'text';
+}): Promise<{ success: boolean; data: unknown; error?: string }> {
+  const response = await fetch('/api/ai/generate-content', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt: params.prompt,
+      type: params.type || 'general',
+      responseFormat: params.responseFormat || 'json',
+    }),
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    // Check for rate limiting
+    if (response.status === 429) {
+      return {
+        success: false,
+        data: null,
+        error: result.error || 'Rate limit exceeded. Please wait a moment.',
+      };
+    }
+    return {
+      success: false,
+      data: null,
+      error: result.error || 'Failed to generate content',
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
+  };
+}

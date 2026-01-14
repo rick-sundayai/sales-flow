@@ -1,13 +1,22 @@
-import { 
-  PluginRegistry, 
-  ReportPlugin, 
-  PluginInstance, 
+import {
+  PluginRegistry,
+  ReportPlugin,
+  PluginInstance,
   PluginConfiguration,
   ReportContext,
   ReportData
 } from '@/lib/types/plugins'
 import { createClient } from '@/lib/supabase/client'
-import { auditLogger } from '@/lib/security/audit-logger'
+
+// Client-safe audit logger that just logs to console in development
+// Real audit logging happens server-side via API routes
+const clientAuditLogger = {
+  log: (event: { action: string; resource: string; resourceId?: string; userId?: string; details?: Record<string, unknown> }) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[Plugin Audit]', event.action, event.resource, event.resourceId)
+    }
+  }
+}
 
 class PluginRegistryImpl implements PluginRegistry {
   plugins = new Map<string, ReportPlugin>()
@@ -19,7 +28,7 @@ class PluginRegistryImpl implements PluginRegistry {
     }
     
     this.plugins.set(plugin.metadata.id, plugin)
-    auditLogger.log({
+    clientAuditLogger.log({
       action: 'plugin_registered',
       resource: 'plugin',
       resourceId: plugin.metadata.id,
@@ -44,7 +53,7 @@ class PluginRegistryImpl implements PluginRegistry {
       }
     }
     
-    auditLogger.log({
+    clientAuditLogger.log({
       action: 'plugin_unregistered',
       resource: 'plugin',
       resourceId: pluginId
@@ -120,7 +129,7 @@ class PluginRegistryImpl implements PluginRegistry {
 
     this.instances.set(instance.id, instance)
     
-    auditLogger.log({
+    clientAuditLogger.log({
       action: 'plugin_instance_created',
       resource: 'plugin_instance',
       resourceId: instance.id,
@@ -175,7 +184,7 @@ class PluginRegistryImpl implements PluginRegistry {
 
     this.instances.set(instanceId, updatedInstance)
     
-    auditLogger.log({
+    clientAuditLogger.log({
       action: 'plugin_instance_updated',
       resource: 'plugin_instance',
       resourceId: instanceId,
@@ -207,7 +216,7 @@ class PluginRegistryImpl implements PluginRegistry {
 
     this.instances.delete(instanceId)
     
-    auditLogger.log({
+    clientAuditLogger.log({
       action: 'plugin_instance_deleted',
       resource: 'plugin_instance',
       resourceId: instanceId,
@@ -239,7 +248,7 @@ class PluginRegistryImpl implements PluginRegistry {
     // Generate the report
     const reportData = await plugin.generate(instance.configuration, context)
     
-    auditLogger.log({
+    clientAuditLogger.log({
       action: 'report_generated',
       resource: 'plugin_instance',
       resourceId: instanceId,

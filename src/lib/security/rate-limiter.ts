@@ -1,9 +1,12 @@
 /**
  * Rate limiting utilities for API routes
- * Implements token bucket algorithm with Redis-like in-memory store
+ * Uses Upstash Redis for distributed rate limiting in production (Vercel)
+ * Falls back to in-memory store for local development
  */
 
 import { NextRequest } from 'next/server';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 import { logger } from '@/lib/utils/logger';
 
 interface RateLimitConfig {
@@ -19,17 +22,40 @@ interface RateLimitStore {
   resetTime: number;
 }
 
-// In-memory store for rate limiting (in production, use Redis)
-const store = new Map<string, RateLimitStore>();
+interface RateLimitResult {
+  success: boolean;
+  limit: number;
+  remaining: number;
+  reset: Date;
+  message?: string;
+}
+
+// Check if Upstash Redis is configured
+const isUpstashConfigured = !!(
+  process.env.UPSTASH_REDIS_REST_URL &&
+  process.env.UPSTASH_REDIS_REST_TOKEN
+);
+
+// Initialize Redis client if configured
+let redis: Redis | null = null;
+if (isUpstashConfigured) {
+  redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL!,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+  });
+}
+
+// In-memory store fallback for local development
+const memoryStore = new Map<string, RateLimitStore>();
 
 /**
- * Clean up expired entries from the store
+ * Clean up expired entries from the in-memory store
  */
 function cleanupExpiredEntries() {
   const now = Date.now();
-  for (const [key, entry] of store.entries()) {
+  for (const [key, entry] of memoryStore.entries()) {
     if (now > entry.resetTime) {
-      store.delete(key);
+      memoryStore.delete(key);
     }
   }
 }
@@ -39,85 +65,207 @@ function cleanupExpiredEntries() {
  */
 function generateKey(req: NextRequest, identifier?: string): string {
   if (identifier) return identifier;
-  
+
   // Try to get real IP behind proxies
   const forwarded = req.headers.get('x-forwarded-for');
   const realIp = req.headers.get('x-real-ip');
-  
+
   const ip = forwarded?.split(',')[0] || realIp || req.ip || 'anonymous';
-  
+
   return `${req.nextUrl.pathname}:${ip}`;
 }
 
 /**
- * Rate limiting middleware
+ * In-memory rate limiting (fallback for development)
+ */
+async function memoryRateLimit(
+  key: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  // Clean up expired entries periodically
+  if (Math.random() < 0.01) {
+    cleanupExpiredEntries();
+  }
+
+  const now = Date.now();
+  let entry = memoryStore.get(key);
+
+  // Initialize or reset if window has passed
+  if (!entry || now > entry.resetTime) {
+    entry = {
+      count: 0,
+      resetTime: now + config.windowMs,
+    };
+    memoryStore.set(key, entry);
+  }
+
+  const remaining = Math.max(0, config.maxRequests - entry.count);
+  const reset = new Date(entry.resetTime);
+
+  // Check if rate limit exceeded
+  if (entry.count >= config.maxRequests) {
+    return {
+      success: false,
+      limit: config.maxRequests,
+      remaining: 0,
+      reset,
+      message: config.message || 'Too many requests',
+    };
+  }
+
+  // Increment counter
+  entry.count++;
+  memoryStore.set(key, entry);
+
+  return {
+    success: true,
+    limit: config.maxRequests,
+    remaining: remaining - 1,
+    reset,
+  };
+}
+
+/**
+ * Create Upstash rate limiter with sliding window
+ */
+function createUpstashRateLimiter(config: RateLimitConfig) {
+  if (!redis) return null;
+
+  // Convert windowMs to seconds for Upstash
+  const windowSeconds = Math.ceil(config.windowMs / 1000);
+
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.slidingWindow(config.maxRequests, `${windowSeconds} s`),
+    analytics: true,
+    prefix: 'salesflow:ratelimit',
+  });
+}
+
+/**
+ * Rate limiting middleware - uses Upstash Redis if available, otherwise in-memory
  */
 export function rateLimit(config: RateLimitConfig) {
+  const upstashLimiter = createUpstashRateLimiter(config);
+
   return async (
     req: NextRequest,
     identifier?: string
-  ): Promise<{
-    success: boolean;
-    limit: number;
-    remaining: number;
-    reset: Date;
-    message?: string;
-  }> => {
-    // Clean up expired entries periodically
-    if (Math.random() < 0.01) { // 1% chance
-      cleanupExpiredEntries();
-    }
-
+  ): Promise<RateLimitResult> => {
     const key = generateKey(req, identifier);
-    const now = Date.now();
-    const windowStart = now - config.windowMs;
 
-    let entry = store.get(key);
+    // Use Upstash if configured
+    if (upstashLimiter) {
+      try {
+        const result = await upstashLimiter.limit(key);
 
-    // Initialize or reset if window has passed
-    if (!entry || now > entry.resetTime) {
-      entry = {
-        count: 0,
-        resetTime: now + config.windowMs,
-      };
-      store.set(key, entry);
+        if (!result.success) {
+          logger.warn('Rate limit exceeded (Upstash)', {
+            action: 'rate_limit_exceeded',
+            metadata: {
+              key,
+              limit: result.limit,
+              remaining: result.remaining,
+              reset: result.reset,
+              userAgent: req.headers.get('user-agent'),
+            },
+          });
+        }
+
+        return {
+          success: result.success,
+          limit: result.limit,
+          remaining: result.remaining,
+          reset: new Date(result.reset),
+          message: result.success ? undefined : config.message || 'Too many requests',
+        };
+      } catch (error) {
+        // If Upstash fails, fall back to in-memory
+        logger.error('Upstash rate limit error, falling back to memory', {
+          action: 'upstash_rate_limit_error',
+          error: error as Error,
+        });
+      }
     }
 
-    const remaining = Math.max(0, config.maxRequests - entry.count);
-    const reset = new Date(entry.resetTime);
+    // Fallback to in-memory rate limiting
+    const result = await memoryRateLimit(key, config);
 
-    // Check if rate limit exceeded
-    if (entry.count >= config.maxRequests) {
-      logger.warn('Rate limit exceeded', {
+    if (!result.success) {
+      logger.warn('Rate limit exceeded (memory)', {
         action: 'rate_limit_exceeded',
         metadata: {
           key,
-          count: entry.count,
           limit: config.maxRequests,
           windowMs: config.windowMs,
           userAgent: req.headers.get('user-agent'),
         },
       });
-
-      return {
-        success: false,
-        limit: config.maxRequests,
-        remaining: 0,
-        reset,
-        message: config.message || 'Too many requests',
-      };
     }
 
-    // Increment counter
-    entry.count++;
-    store.set(key, entry);
+    return result;
+  };
+}
 
-    return {
-      success: true,
-      limit: config.maxRequests,
-      remaining: remaining - 1,
-      reset,
-    };
+/**
+ * User-specific rate limiter (uses user ID instead of IP)
+ * Uses Upstash Redis if available
+ */
+export function userRateLimit(config: RateLimitConfig) {
+  const upstashLimiter = createUpstashRateLimiter(config);
+
+  return async (userId: string): Promise<RateLimitResult> => {
+    const key = `user:${userId}`;
+
+    // Use Upstash if configured
+    if (upstashLimiter) {
+      try {
+        const result = await upstashLimiter.limit(key);
+
+        if (!result.success) {
+          logger.warn('User rate limit exceeded (Upstash)', {
+            userId,
+            action: 'user_rate_limit_exceeded',
+            metadata: {
+              limit: result.limit,
+              remaining: result.remaining,
+              reset: result.reset,
+            },
+          });
+        }
+
+        return {
+          success: result.success,
+          limit: result.limit,
+          remaining: result.remaining,
+          reset: new Date(result.reset),
+          message: result.success ? undefined : config.message || 'Too many requests',
+        };
+      } catch (error) {
+        logger.error('Upstash user rate limit error, falling back to memory', {
+          userId,
+          action: 'upstash_user_rate_limit_error',
+          error: error as Error,
+        });
+      }
+    }
+
+    // Fallback to in-memory rate limiting
+    const result = await memoryRateLimit(key, config);
+
+    if (!result.success) {
+      logger.warn('User rate limit exceeded (memory)', {
+        userId,
+        action: 'user_rate_limit_exceeded',
+        metadata: {
+          count: config.maxRequests,
+          limit: config.maxRequests,
+          windowMs: config.windowMs,
+        },
+      });
+    }
+
+    return result;
   };
 }
 
@@ -152,6 +300,16 @@ export const emailRateLimit = rateLimit({
   maxRequests: 5,
   message: 'Email sending rate limit exceeded',
 });
+
+// AI endpoint rate limiter (5 requests per minute per user)
+// Used to prevent API quota exhaustion and cost abuse
+export const aiRateLimitConfig = {
+  windowMs: 60 * 1000, // 1 minute
+  maxRequests: 5,
+  message: 'AI request limit exceeded. Please wait a moment before trying again.',
+};
+
+export const aiRateLimit = userRateLimit(aiRateLimitConfig);
 
 /**
  * Middleware factory for Next.js API routes
@@ -194,7 +352,7 @@ export function withRateLimit(
 
     // Add rate limit headers to successful responses
     const response = await handler(req);
-    
+
     response.headers.set('X-RateLimit-Limit', result.limit.toString());
     response.headers.set('X-RateLimit-Remaining', result.remaining.toString());
     response.headers.set('X-RateLimit-Reset', result.reset.toISOString());
@@ -204,71 +362,10 @@ export function withRateLimit(
 }
 
 /**
- * User-specific rate limiter (uses user ID instead of IP)
- */
-export function userRateLimit(config: RateLimitConfig) {
-  return async (
-    userId: string
-  ): Promise<{
-    success: boolean;
-    limit: number;
-    remaining: number;
-    reset: Date;
-    message?: string;
-  }> => {
-    const now = Date.now();
-    const key = `user:${userId}`;
-
-    let entry = store.get(key);
-
-    if (!entry || now > entry.resetTime) {
-      entry = {
-        count: 0,
-        resetTime: now + config.windowMs,
-      };
-      store.set(key, entry);
-    }
-
-    const remaining = Math.max(0, config.maxRequests - entry.count);
-    const reset = new Date(entry.resetTime);
-
-    if (entry.count >= config.maxRequests) {
-      logger.warn('User rate limit exceeded', {
-        userId,
-        action: 'user_rate_limit_exceeded',
-        metadata: {
-          count: entry.count,
-          limit: config.maxRequests,
-          windowMs: config.windowMs,
-        },
-      });
-
-      return {
-        success: false,
-        limit: config.maxRequests,
-        remaining: 0,
-        reset,
-        message: config.message || 'Too many requests',
-      };
-    }
-
-    entry.count++;
-    store.set(key, entry);
-
-    return {
-      success: true,
-      limit: config.maxRequests,
-      remaining: remaining - 1,
-      reset,
-    };
-  };
-}
-
-/**
  * Clear rate limit for a specific key (useful for testing)
  */
 export function clearRateLimit(key: string): void {
-  store.delete(key);
+  memoryStore.delete(key);
 }
 
 /**
@@ -278,7 +375,7 @@ export function getRateLimitStatus(key: string, config: RateLimitConfig): {
   remaining: number;
   reset: Date;
 } {
-  const entry = store.get(key);
+  const entry = memoryStore.get(key);
   const now = Date.now();
 
   if (!entry || now > entry.resetTime) {
@@ -292,4 +389,11 @@ export function getRateLimitStatus(key: string, config: RateLimitConfig): {
     remaining: Math.max(0, config.maxRequests - entry.count),
     reset: new Date(entry.resetTime),
   };
+}
+
+/**
+ * Check if Upstash Redis is being used
+ */
+export function isUsingUpstash(): boolean {
+  return isUpstashConfigured && redis !== null;
 }

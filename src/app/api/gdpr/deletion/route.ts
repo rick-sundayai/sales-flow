@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
         {
           success: false,
           error: 'Invalid request data',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );
@@ -101,7 +101,7 @@ export async function DELETE(req: NextRequest) {
         {
           success: false,
           error: 'Invalid request data',
-          details: validation.error.errors,
+          details: validation.error.issues,
         },
         { status: 400 }
       );
