@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
     // Get client IP for audit trail
     const forwarded = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
-    const ipAddress = forwarded?.split(',')[0] || realIp || req.ip;
+    // ✅ Correct: Rely on standard headers
+const ipAddress = forwarded?.split(',')[0] || realIp || undefined;;
 
     const requestId = await requestDataExport(user.id, ipAddress);
 
@@ -50,7 +51,6 @@ export async function POST(req: NextRequest) {
         logger.error('Failed to update export request', {
           action: 'gdpr_export_update_failed',
           userId: user.id,
-          requestId,
           error: updateError,
         });
       }

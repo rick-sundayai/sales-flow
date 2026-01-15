@@ -80,6 +80,11 @@ export function useRecentActivities(limit = 10) {
         title: activity.title,
         description: activity.description,
         timestamp: formatTimeAgo(activity.created_at),
+        created_at: activity.created_at,
+        completed: activity.completed,
+        client_id: activity.client_id,
+        deal_id: activity.deal_id,
+        client_name: activity.client?.company_name || activity.client?.contact_name,
         user: undefined, // Will default to "You" in the component
       })) || []
     },

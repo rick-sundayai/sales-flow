@@ -113,7 +113,8 @@ export async function POST(req: NextRequest) {
           consent.consentType,
           consent.granted,
           ipAddress,
-          userAgent
+          // ✅ Correct
+          userAgent ?? undefined
         );
       }
 
@@ -138,7 +139,8 @@ export async function POST(req: NextRequest) {
         consentType,
         granted,
         ipAddress,
-        userAgent
+        // ✅ Correct
+        userAgent ?? undefined
       );
 
       return NextResponse.json({

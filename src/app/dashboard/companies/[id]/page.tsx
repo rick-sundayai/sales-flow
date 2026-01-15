@@ -41,7 +41,13 @@ export default function CompanyDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const companyId = params.id as string;
   
-  const { data: company, isLoading: companyLoading } = useCompany(companyId);
+  const { data: companyData, isLoading: companyLoading } = useCompany(companyId);
+  // Type assertion to handle legacy field naming inconsistencies
+  const company = companyData as typeof companyData & {
+    website?: string;
+    industry?: string;
+    phone?: string;
+  };
   const { data: allClients = [] } = useClients();
   const { data: allDeals = [] } = useDeals();
   const { data: activities = [] } = useRecentActivities();
@@ -140,7 +146,7 @@ export default function CompanyDetailPage() {
             <div>
               <h1 className="text-3xl font-bold">{company.name}</h1>
               <div className="flex items-center gap-2 mt-1">
-                {company.industry && (
+                {company?.industry && (
                   <Badge variant="outline">
                     {company.industry}
                   </Badge>

@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Database, CheckCircle2, Copy, ExternalLink, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function SetupGuidePage() {
   const [copied, setCopied] = useState(false);
@@ -143,15 +144,15 @@ export default function SetupGuidePage() {
           <div className="space-y-2">
             <span className="text-sm font-medium">To verify, navigate to these pages:</span>
             <div className="space-y-1">
-              <a href="/dashboard" className="text-sm text-primary hover:underline block">
+              <Link href="/dashboard" className="text-sm text-primary hover:underline block">
                 → Dashboard (should show metrics and recent activities)
-              </a>
-              <a href="/dashboard/clients" className="text-sm text-primary hover:underline block">
+              </Link>
+              <Link href="/dashboard/clients" className="text-sm text-primary hover:underline block">
                 → Clients (should show 15 clients)
-              </a>
-              <a href="/dashboard/pipeline" className="text-sm text-primary hover:underline block">
+              </Link>
+              <Link href="/dashboard/pipeline" className="text-sm text-primary hover:underline block">
                 → Pipeline (should show 18 deals across 6 stages)
-              </a>
+              </Link>
             </div>
           </div>
         </CardContent>

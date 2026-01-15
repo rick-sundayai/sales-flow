@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // Get client IP for audit trail
     const forwarded = req.headers.get('x-forwarded-for');
     const realIp = req.headers.get('x-real-ip');
-    const ipAddress = forwarded?.split(',')[0] || realIp || req.ip;
+    const ipAddress = forwarded?.split(',')[0] || realIp || 'unknown';
 
     const requestId = await requestAccountDeletion(user.id, reason, ipAddress);
 
